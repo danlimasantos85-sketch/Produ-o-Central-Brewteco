@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Brewteco — Planejamento Semanal de Produção</title>
+<title>Brewteco — Planejamento Semanal de Production</title>
 <meta name="description" content="Dashboard de planejamento semanal da cozinha central Brewteco.">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
@@ -25,9 +25,10 @@ textarea{cursor:text}
 
 /* TOPBAR COM PADRÃO DE AZULEJOS REPETIDOS */
 .topbar{
+  background-color: var(--navy); /* Cor de fundo caso a imagem falhe */
   background-image: url("Gemini_Generated_Image_5fshqt5fshqt5fsh.png");
   background-repeat: repeat;
-  background-size: 56px 56px; /* Mantém o azulejo quadrado proporcional à altura da barra */
+  background-size: 56px 56px; /* Mantém a proporção exata do azulejo quadrado */
   height: 56px;
   display: flex;
   align-items: center;
@@ -39,9 +40,10 @@ textarea{cursor:text}
   box-shadow: 0 2px 8px rgba(0,0,0,.15);
 }
 .brand{display:flex;align-items:center;gap:12px;color:var(--navy)}
-/* LOGO CORRIGIDO: Exibe o arquivo original em preto sem filtros de inversão */
+/* Ajuste do tamanho do container do logo */
+.brand picture, .brand img{height:32px;width:auto;display:flex;align-items:center}
 .brand-logo{height:32px;width:auto;object-fit:contain}
-.brand .sep{color:rgba(13,33,55,.3);font-size:14px;font-weight:bold}
+.brand .sep{color:rgba(13,33,55,.4);font-size:14px;font-weight:bold;text-shadow:0 1px 1px rgba(255,255,255,0.6)}
 .brand .sub{font-weight:700;color:var(--navy);font-size:13px;text-shadow:0 1px 1px rgba(255,255,255,0.8)}
 .topbar-right{display:flex;align-items:center;gap:8px}
 .brew-badge{background:var(--navy);color:#fff;font-size:11px;font-weight:600;padding:4px 10px;border-radius:99px;box-shadow:var(--shadow)}
@@ -131,7 +133,7 @@ input[type=range]{width:130px;accent-color:var(--brew)}
 .modal-opt.selected .opt-date{opacity:1}
 .modal-actions{display:flex;justify-content:flex-end;gap:8px}
 
-/* KPI, BREAKDOWN, TABLES E OUTROS ESTILOS MANTIDOS */
+/* TABLES, KPIS & CHARTS */
 .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.25rem}
 .kpi{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:.85rem 1rem;box-shadow:var(--shadow)}
 .kpi-l{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
@@ -204,9 +206,12 @@ tfoot td.r{text-align:right}
 <body>
 
 <nav class="topbar">
-  <!-- LOGO OFICIAL SOBRE A FAIXA DE AZULEJOS PORTUGUESES -->
+  <!-- CARREGAMENTO INTELIGENTE DO LOGO (TESTA .PNG E DEPOIS .JPG AUTOMATICAMENTE) -->
   <div class="brand">
-    <img src="Logo Brewteco.jpg" alt="Brewteco" class="brand-logo">
+    <picture>
+      <source srcset="Logo Brewteco.png" type="image/png">
+      <img src="Logo Brewteco.jpg" alt="Brewteco" class="brand-logo">
+    </picture>
     <span class="sep">|</span>
     <span class="sub">Planejamento Semanal de Produção</span>
   </div>
