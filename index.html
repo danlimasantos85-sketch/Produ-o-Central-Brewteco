@@ -24,9 +24,10 @@ button,input,textarea,select{font-family:inherit;cursor:pointer}
 textarea{cursor:text}
 
 /* TOPBAR */
-.topbar{background:var(--navy);height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 1.5rem;position:sticky;top:0;z-index:200;box-shadow:0 2px 8px rgba(0,0,0,.2)}
-.brand{display:flex;align-items:center;gap:8px;color:#fff;font-size:14px;font-weight:700}
-.brand .sep{color:rgba(255,255,255,.3)}
+.topbar{background:var(--navy);height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 1.5rem;position:sticky;top:0;z-index:200;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.brand{display:flex;align-items:center;gap:12px;color:#fff}
+.brand-logo{height:28px;width:auto;object-fit:contain;filter:invert(1) brightness(2)}
+.brand .sep{color:rgba(255,255,255,.3);font-size:14px}
 .brand .sub{font-weight:400;color:rgba(255,255,255,.6);font-size:13px}
 .topbar-right{display:flex;align-items:center;gap:8px}
 .brew-badge{background:rgba(200,134,10,.22);color:var(--brew-lt);font-size:11px;font-weight:600;padding:3px 10px;border-radius:99px}
@@ -172,14 +173,6 @@ tfoot td{background:var(--navy);color:#fff;font-size:12px;font-weight:700;paddin
 tfoot td.r{text-align:right}
 .chart-card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.25rem;box-shadow:var(--shadow);margin-bottom:1.25rem}
 .chart-card h3{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.6rem}
-.hist-item{display:flex;align-items:center;gap:10px;padding:7px 10px;background:var(--surface2);border-radius:6px;font-size:12px;margin-bottom:5px}
-.hist-dot{width:8px;height:8px;border-radius:50%;background:var(--brew);flex-shrink:0}
-.hist-week{font-weight:700;color:var(--navy);white-space:nowrap}
-.hist-meta{color:var(--muted);flex:1}
-.hist-stat">Proj: ${h.totalProj.toLocaleString('pt-BR')} · Real: ${h.totalReal.toLocaleString('pt-BR')}</span>
-      <span style="font-size:10px;color:var(--muted)">salvo ${h.at}</span>
-    </div>`).join('');
-}
 .empty{text-align:center;padding:3.5rem 2rem;color:var(--muted)}
 .empty .big{font-size:3rem;margin-bottom:.75rem}
 .empty p{font-size:13px;max-width:400px;margin:0 auto;line-height:1.7}
@@ -197,7 +190,12 @@ tfoot td.r{text-align:right}
 <body>
 
 <nav class="topbar">
-  <div class="brand">🍺 Brewteco <span class="sep">|</span><span class="sub">Planejamento Semanal de Produção</span></div>
+  <!-- LOGO OFICIAL INTEGRADA E TRATADA COM FILTRO BRANCO -->
+  <div class="brand">
+    <img src="Logo Brewteco.jpg" alt="Brewteco" class="brand-logo">
+    <span class="sep">|</span>
+    <span class="sub">Planejamento Semanal de Produção</span>
+  </div>
   <div class="topbar-right">
     <span class="brew-badge" id="weekBadge">sem dados</span>
     <button class="btn-bar" onclick="exportCSV()">⬇ CSV</button>
@@ -310,7 +308,6 @@ tfoot td.r{text-align:right}
 </div>
 
 <script>
-/* Universal Parser e regras herdadas */
 const NOISE_WORDS = new Set(['produto','item','descricao','descricao','qtd','quantidade','quant','total','subtotal','valor','preco','preco','unidade','un','pc','pcs','loja','data','romaneio','producao','producao','geral','observacao','observacao','categoria','cat','litros','litro','kg','g','ml','l','embalagem','ref','codigo','codigo','nome','descr','und','nro','nr','seq','no','estornos','grupos','grupo','eventos','evento','bar','litros']);
 const SKIP_START = ['total','subtotal','geral','observ'];
 
@@ -391,7 +388,7 @@ let S = {
   loadedIdx: [],
 };
 let CHARTS = { top: null };
-let pendingImport = null; // Guarda o arquivo lido enquanto aguarda confirmação no Modal
+let pendingImport = null;
 
 function save() {
   if (!S.weekDates[0]) return;
@@ -423,18 +420,13 @@ function setWeek() {
 }
 function onMargin(v) { S.margin = parseInt(v); document.getElementById('marginDisp').textContent = '+'+v+'%'; save(); renderDashboard(); }
 
-/* ═══════════════════════════════════════════════════════════════
-   DETECÇÃO INTELIGENTE DE DATA & MODAL DE SELEÇÃO
-═══════════════════════════════════════════════════════════════ */
 function smartDetectDateIndex(filename, contentText) {
-  // 1. Procura padrão de data DD_MM ou DD/MM no nome do arquivo primeiro
   const fileDateMatch = filename.match(/(\d{2})[\/_](\d{2})/);
   if (fileDateMatch) {
     const formatted = fileDateMatch[1] + '/' + fileDateMatch[2];
     const idx = S.weekDates.indexOf(formatted);
     if (idx >= 0 && idx < 6) return idx;
   }
-  // 2. Se não achou no nome, varre o conteúdo do arquivo
   const contentDateMatch = contentText.match(/(\d{2})\/(\d{2})/g);
   if (contentDateMatch) {
     for (let m of contentDateMatch) {
@@ -442,7 +434,7 @@ function smartDetectDateIndex(filename, contentText) {
       if (idx >= 0 && idx < 6) return idx;
     }
   }
-  return 5; // Default: Sábado se não encontrar nada
+  return 5;
 }
 
 function openDateModal(label, rows, initialIdx) {
@@ -502,16 +494,17 @@ function handleExtFiles(input) {
   input.value = '';
 }
 
-// Drag and drop setup
 const dz = document.getElementById('dropZone');
-dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag'); });
-dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
-dz.addEventListener('drop', e => {
-  e.preventDefault(); dz.classList.remove('drag');
-  const files = [...e.dataTransfer.files].filter(f => /\.(csv|txt|tsv)$/i.test(f.name));
-  if (!files.length) { alert('Apenas arquivos .csv, .txt ou .tsv'); return; }
-  handleExtFiles({ files });
-});
+if (dz) {
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
+  dz.addEventListener('drop', e => {
+    e.preventDefault(); dz.classList.remove('drag');
+    const files = [...e.dataTransfer.files].filter(f => /\.(csv|txt|tsv)$/i.test(f.name));
+    if (!files.length) { alert('Apenas arquivos .csv, .txt ou .tsv'); return; }
+    handleExtFiles({ files });
+  });
+}
 
 function processPaste() {
   const text = document.getElementById('pasteInput').value;
@@ -537,7 +530,6 @@ function renderChips() {
     </div>`).join('');
 }
 
-/* Restante do motor de Render/Cálculos preservado e ativo */
 function renderCards() {
   const grid = document.getElementById('daysGrid'); grid.innerHTML = '';
   for (let i=0; i<6; i++) {
@@ -615,8 +607,8 @@ function renderDashboard() {
   processData();
   if (!S.products.length) { document.getElementById('dashboard').style.display = 'none'; document.getElementById('emptyState').style.display = 'block'; return; }
   document.getElementById('dashboard').style.display = 'block'; document.getElementById('emptyState').style.display = 'none';
-  const { products, dayTotals, nLoaded, loadedIdx, margin, weekDates } = S;
-  const tProj = products.reduce((s,p)=>s+p.projWeek,0), tSat = dayTotals[5], nFut = 6 - nLoaded, avgDay = S.products.reduce((s,p)=>s+p.metaDay,0);
+  const { products, dayTotals, nLoaded, margin, weekDates } = S;
+  const tProj = products.reduce((s,p)=>s+p.projWeek,0), tSat = dayTotals[5], avgDay = S.products.reduce((s,p)=>s+p.metaDay,0);
 
   document.getElementById('kpiRow').innerHTML = `
     <div class="kpi blue"><div class="kpi-l">Projeção semanal</div><div class="kpi-v">${tProj.toLocaleString('pt-BR')}</div><div class="kpi-s">+${margin}% margem</div></div>
@@ -624,7 +616,6 @@ function renderDashboard() {
     <div class="kpi green"><div class="kpi-l">Meta sábado (×2)</div><div class="kpi-v">${tSat.toLocaleString('pt-BR')}</div><div class="kpi-s">cobre sáb + dom</div></div>
     <div class="kpi"><div class="kpi-l">Produtos ativos</div><div class="kpi-v">${products.length}</div><div class="kpi-s">filtros aplicados</div></div>`;
 
-  const futStr = DAYS.slice(nLoaded,6).join(', ')||'—';
   document.getElementById('disclaBox').innerHTML = `<strong>Como funciona:</strong> Média real sobre <strong>${nLoaded} dia(s)</strong>. Sábado = meta × 2 (cobre domingo).`;
 
   document.getElementById('bkRow').innerHTML = [0,1,2,3,4,5,6].map(i => {
@@ -650,12 +641,12 @@ function renderViewTabs() {
 function switchView(v) { S.view = v; document.getElementById('chartCard').style.display = v==='geral' ? 'block' : 'none'; renderViewTabs(); renderTable(); }
 
 function renderTable() {
-  const { products, view } = S; const thead = document.getElementById('thead'), tbody = document.getElementById('tbody'), tfoot = document.getElementById('tfoot'), maxP = products[0]?.projWeek || 1;
+  const { products, view } = S; const thead = document.getElementById('thead'), tbody = document.getElementById('tbody'), maxP = products[0]?.projWeek || 1;
   if (view === 'geral') {
     thead.innerHTML = `<tr><th>#</th><th>Produto</th><th>Perfil</th><th class="r">Real acum.</th><th class="r">Meta diária</th><th class="r col-proj">Projeção semana</th><th class="r col-sat">Sábado (×2)</th><th></th></tr>`;
     tbody.innerHTML = products.map((p,i) => `<tr><td>${i+1}</td><td style="font-weight:500">${cap(p.name)}</td><td><span class="pill ${pillClass(p.tier)}">${p.tier}</span></td><td class="r">${p.totalQtd}</td><td class="r"><span class="vday">${p.metaDay}</span></td><td class="r"><span class="vproj">${p.projWeek}</span></td><td class="r"><span class="vsat">${p.satMeta}</span></td><td><div class="bar-mini"><div class="bar-f" style="width:${Math.round((p.projWeek/maxP)*100)}%;background:${barColor(p.tier)}"></div></div></td></tr>`).join('');
   } else {
-    const di = parseInt(view), isSat = di === 5;
+    const di = parseInt(view);
     thead.innerHTML = `<tr><th>#</th><th>Produto</th><th>Perfil</th><th class="r">Venda real</th><th class="r col-ext">Externo</th><th class="r col-proj">👉 PRODUZIR HOJE</th></tr>`;
     const rows = products.filter(p => p.allocDay[di] > 0);
     tbody.innerHTML = rows.map((p,i) => `<tr><td>${i+1}</td><td style="font-weight:700">${cap(p.name)}</td><td><span class="pill ${pillClass(p.tier)}">${p.tier}</span></td><td class="r">${S.dayData[di]?p.byDay[di]:'—'}</td><td class="r"><span class="vext">${p.extByDay[di]>0?p.extByDay[di]:'—'}</span></td><td class="r" style="background:var(--foam)"><span class="vproj">${p.allocDay[di]} un</span></td></tr>`).join('');
@@ -664,10 +655,13 @@ function renderTable() {
 
 function renderChart() {
   const top15 = S.products.slice(0,15); if (CHARTS.top) CHARTS.top.destroy();
-  CHARTS.top = new Chart(document.getElementById('chartTop'), {
-    type: 'bar', data: { labels: top15.map(p => cap(p.name).slice(0,14)), datasets: [{ data:top15.map(p=>p.projWeek), backgroundColor:top15.map(p=>barColor(p.tier)) }] },
-    options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{grid:{display:false}},y:{grid:{color:'#E2DDD4'}}} }
-  });
+  const ctx = document.getElementById('chartTop');
+  if (ctx) {
+    CHARTS.top = new Chart(ctx, {
+      type: 'bar', data: { labels: top15.map(p => cap(p.name).slice(0,14)), datasets: [{ data:top15.map(p=>p.projWeek), backgroundColor:top15.map(p=>barColor(p.tier)) }] },
+      options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{grid:{display:false}},y:{grid:{color:'#E2DDD4'}}} }
+    });
+  }
 }
 
 function exportCSV() { _dlCSV(S.products.map(p=>[cap(p.name),p.tier,p.metaDay,p.projWeek]), 'producao.csv'); }
