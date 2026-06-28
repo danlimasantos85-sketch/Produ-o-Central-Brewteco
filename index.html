@@ -51,7 +51,6 @@ input[type=date]:focus{border-color:var(--brew)}
 input[type=range]{width:130px;accent-color:var(--brew)}
 .margin-info{font-size:11px;color:var(--muted);line-height:1.5}
 
-/* PAINEL DE EXTERNOS MELHORADO */
 .external-panel{background:#F4EFE6;border:1px solid var(--border-md);border-radius:var(--radius-lg);padding:1rem;margin-bottom:1.25rem}
 .external-upload-zone{background:#fff;border:2px dashed var(--brew);border-radius:var(--radius);padding:1.2rem;text-align:center;position:relative;cursor:pointer}
 .external-upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
@@ -82,7 +81,7 @@ input[type=range]{width:130px;accent-color:var(--brew)}
 .day-card.loaded .dc-remove{display:block}
 .dc-remove:hover{background:rgba(200,0,0,.18);color:#c00}
 
-.kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:1.25rem}
+.kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1.25rem}
 .kpi{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:.85rem 1rem;box-shadow:var(--shadow-sm)}
 .kpi-lbl{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 .kpi-val{font-size:22px;font-weight:700;color:var(--navy);line-height:1.2;margin:3px 0}
@@ -92,7 +91,6 @@ input[type=range]{width:130px;accent-color:var(--brew)}
 .kpi.green .kpi-val{color:var(--media-c)}
 
 .disclaimer{background:var(--foam);border:0.5px solid #E2C97A;border-left:4px solid var(--brew);border-radius:0 var(--radius) var(--radius) 0;padding:.7rem 1rem;font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:1.25rem}
-.disclaimer strong{color:var(--navy)}
 
 .critical-panel{background:#FFF5F5;border:0.5px solid #FEB2B2;border-radius:var(--radius-lg);padding:1rem;margin-bottom:1.25rem;display:none}
 .critical-title{font-size:12px;font-weight:700;color:#C53030;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.5rem}
@@ -104,27 +102,16 @@ input[type=range]{width:130px;accent-color:var(--brew)}
 .bd-cell.sat{border-color:var(--alta-bdr);background:var(--alta-bg)}
 .bd-cell.dom{opacity:.5}
 .bd-day{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
-.bd-date{font-size:10px;color:var(--muted);margin:1px 0}
 .bd-val{font-size:16px;font-weight:700;color:var(--navy);margin:3px 0}
-.bd-val.proj{color:var(--muted);font-size:13px;font-weight:500;font-style:italic}
-.bd-proj-lbl{font-size:10px;color:var(--brew);font-weight:600}
 
 .chart-row{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:1.25rem}
 .chart-card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.25rem;box-shadow:var(--shadow-sm)}
 .chart-card h3{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.75rem}
-.legend-row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:.5rem}
-.leg-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)}
-.leg-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
 
 .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:.75rem}
 .tab{font-size:11px;font-weight:600;padding:5px 14px;border-radius:99px;border:1.5px solid var(--border-md);background:var(--surface);color:var(--muted);transition:all .12s}
 .tab:hover{border-color:var(--navy);color:var(--navy)}
 .tab.act-all{background:var(--navy);color:#fff;border-color:var(--navy)}
-.tab.act-alta{background:var(--alta-bg);color:var(--alta-c);border-color:var(--alta-c)}
-.tab.act-media{background:var(--media-bg);color:var(--media-c);border-color:var(--media-c)}
-.tab.act-baixa{background:var(--baixa-bg);color:var(--baixa-c);border-color:var(--baixa-c)}
-.tab.act-pont{background:var(--pont-bg);color:var(--pont-c);border-color:var(--pont-bdr)}
-.tab.act-promo{background:var(--promo-bg);color:var(--promo-c);border-color:var(--promo-c)}
 .tab.act-day{background:var(--brew);color:#fff;border-color:var(--brew)}
 
 .table-wrap{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);overflow:hidden;margin-bottom:1.25rem}
@@ -132,10 +119,7 @@ table{width:100%;border-collapse:collapse}
 thead th{background:var(--navy);color:#fff;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:9px 10px;text-align:left;white-space:nowrap}
 thead th.r{text-align:right}
 thead th.col-proj{background:var(--alta-c)}
-thead th.col-sat{background:#185FA5}
-thead th.col-day{background:var(--media-c)}
 tbody tr{border-bottom:0.5px solid var(--border);transition:background .1s}
-tbody tr:last-child{border-bottom:none}
 tbody tr:hover{background:var(--foam)}
 tbody td{padding:8px 10px;color:var(--ink);font-size:12px}
 tbody td.r{text-align:right;font-variant-numeric:tabular-nums}
@@ -144,13 +128,7 @@ tbody td.r{text-align:right;font-variant-numeric:tabular-nums}
 .p-media{background:var(--media-bg);color:var(--media-c)}
 .p-baixa{background:var(--baixa-bg);color:var(--baixa-c)}
 .p-pont{background:var(--pont-bg);color:var(--pont-c)}
-.p-promo{background:var(--promo-bg);color:var(--promo-c)}
-.val-real{font-size:12px;color:var(--muted)}
-.val-day{font-size:13px;font-weight:700;color:var(--media-c)}
 .val-proj{font-size:13px;font-weight:700;color:var(--alta-c)}
-.val-sat{font-size:13px;font-weight:700;color:#185FA5}
-.bar-mini{width:64px;height:4px;background:var(--border);border-radius:2px;display:inline-block;vertical-align:middle}
-.bar-fill{height:4px;border-radius:2px}
 tfoot td{background:var(--navy);color:#fff;font-size:12px;font-weight:700;padding:9px 10px}
 tfoot td.r{text-align:right}
 
@@ -177,8 +155,6 @@ tfoot td.r{text-align:right}
 </nav>
 
 <div class="page">
-  <div class="print-title" id="printTitle">ROMANEIO DE PRODUÇÃO — BREWTECO</div>
-
   <!-- SETUP -->
   <div class="setup-panel">
     <div class="setup-row">
@@ -220,7 +196,6 @@ tfoot td.r{text-align:right}
   <!-- DASHBOARD -->
   <div id="dashboard" style="display:none">
     <div class="kpi-grid" id="kpiGrid"></div>
-    <div class="disclaimer" id="disclaimerBox"></div>
 
     <div class="sec-label">Resumo de Saídas da Semana (Com Margem Aplicada)</div>
     <div class="breakdown-row" id="breakdownRow"></div>
@@ -240,8 +215,6 @@ tfoot td.r{text-align:right}
       <button class="tab" id="btn-view-sab" onclick="switchMainView('5')">🔥 Sáb (+ Dom)</button>
     </div>
 
-    <div class="tabs" id="tierTabs"></div>
-
     <!-- MAIN DATA TABLE -->
     <div class="table-wrap">
       <table id="mainTable">
@@ -254,22 +227,11 @@ tfoot td.r{text-align:right}
     <!-- GRAPHICS -->
     <div id="graphicsSection">
       <div class="chart-row">
-        <div class="chart-card">
-          <div class="legend-row">
-            <span class="leg-item"><span class="leg-dot" style="background:#C8C3BA"></span>Real acumulado</span>
-            <span class="leg-item"><span class="leg-dot" style="background:#2a78d6"></span>Meta projetada total</span>
-          </div>
+        <div class="chart-card" style="grid-column: span 2">
           <h3>Top 15 — Projeção Semanal com Margem</h3>
           <div style="position:relative;height:260px">
             <canvas id="chartTop"></canvas>
           </div>
-        </div>
-        <div class="chart-card">
-          <h3>Perfil de Demanda</h3>
-          <div style="position:relative;height:200px">
-            <canvas id="chartTier"></canvas>
-          </div>
-          <div id="tierLegend" style="margin-top:.5rem"></div>
         </div>
       </div>
     </div>
@@ -309,7 +271,7 @@ let S = {
   nLoaded:      0,
   loadedIdx:    [],
 };
-let CHARTS = { top: null, tier: null };
+let CHARTS = { top: null };
 
 function saveStateToStorage() {
   if(!S.weekDates[0]) return;
@@ -363,7 +325,6 @@ function setWeek(){
   saveStateToStorage(); renderDayCards(); renderDashboard();
 }
 
-/* ── LEITURA ROBUSTA E TRATAMENTO DE DATA DO ROMANEIO ── */
 function extractDataFromText(rawText) {
   const dateRegex = /(\d{2})\/(\d{2})\/(\d{4})|(\d{2})\/(\d{2})/g;
   let match, foundDate = null;
@@ -375,12 +336,55 @@ function extractDataFromText(rawText) {
 }
 
 function matchDateToDayIndex(dateString) {
-  if(!dateString) return 5; // Padrão Sábado se não achar nada
+  if(!dateString) return 5;
   const parts = dateString.split('/');
   const dayMonth = parts[0] + '/' + parts[1];
   const idx = S.weekDates.indexOf(dayMonth);
-  if(idx === -1 || idx === 6) return 5; // Domingo (6) ou fora da grade cai no lote de Sábado (5)
+  if(idx === -1 || idx === 6) return 5;
   return idx;
+}
+
+/* ── LEITOR ULTRA-ROBUSTO DE LINHAS SEM CABEÇALHO FIXO ── */
+function parseAgressiveCSV(rawText) {
+  // Substitui quebras de linha estranhas e limpa espaços vazios
+  const lines = rawText.split(/\r?\n/);
+  let cleanedRows = [];
+
+  lines.forEach(line => {
+    if(!line.trim()) return;
+    
+    // Divide por ponto e vírgula ou vírgula dinamicamente
+    let cells = line.includes(';') ? line.split(';') : line.split(',');
+    cells = cells.map(c => c.replace(/^["']|["']$/g, '').trim()); // Limpa aspas
+
+    if(cells.length < 2) return;
+
+    let name = '';
+    let qty = 0;
+
+    // A lógica tenta caçar onde está o texto descritivo e onde está o valor numérico puro
+    for(let i=0; i<cells.length; i++) {
+      let cell = cells[i];
+      if(!cell) continue;
+
+      let parsedNum = parseFloat(cell.replace(/[^\d.,-]/g, '').replace(',', '.'));
+      
+      // Se for um número válido e pequeno (evitando códigos de barras ou IDs longos)
+      if(!isNaN(parsedNum) && parsedNum > 0 && parsedNum < 10000 && !name.includes(cell)) {
+        qty = parsedNum;
+      } else if (cell.length > 2 && isNaN(Number(cell))) {
+        // Se for texto longo, assumimos que é o nome do produto
+        if(!name) name = cell;
+      }
+    }
+
+    let upperName = name.toUpperCase();
+    if(name && qty > 0 && !upperName.includes('PRODUTO') && !upperName.includes('TOTAL') && !upperName.includes('ROMANEIO')) {
+      cleanedRows.push({ Produto: name, Qtd: qty });
+    }
+  });
+
+  return cleanedRows;
 }
 
 function loadMultipleExternals(input) {
@@ -395,37 +399,20 @@ function loadMultipleExternals(input) {
       const rawText = e.target.result;
       const detectedDate = extractDataFromText(rawText);
       const targetDayIdx = matchDateToDayIndex(detectedDate);
+      const cleanedRows = parseAgressiveCSV(rawText);
 
-      // Parse agressivo aceitando variações de colunas comuns em conversões ruins
-      const p = Papa.parse(rawText, {header:false, skipEmptyLines:true});
-      if(p.data.length) {
-        let cleanedRows = [];
-        p.data.forEach(row => {
-          let rowStr = row.join(' ').toUpperCase();
-          if(rowStr.includes('PRODUTO') || rowStr.includes('TOTAL') || row.length < 2) return;
-          
-          let name = String(row[0] || row[1] || '').trim();
-          // Procura dinamicamente onde está o número da quantidade
-          let qty = 0;
-          for(let cell of row) {
-            let parsed = parseFloat(String(cell).replace(/[^\d.,]/g, '').replace(',', '.'));
-            if(!isNaN(parsed) && parsed > 0 && parsed < 5000) { qty = parsed; } 
-          }
-          if(name && qty > 0) {
-            cleanedRows.push({ Produto: name, Qtd: qty });
-          }
+      if(cleanedRows.length) {
+        S.externalLogs.push({
+          id: Date.now() + Math.random().toString(36).substr(2, 5),
+          filename: file.name,
+          detectedDate: detectedDate || 'Sáb (Geral)',
+          targetDayIdx: targetDayIdx,
+          data: cleanedRows
         });
-
-        if(cleanedRows.length) {
-          S.externalLogs.push({
-            id: Date.now() + Math.random().toString(36).substr(2, 5),
-            filename: file.name,
-            detectedDate: detectedDate || 'Sáb (Geral)',
-            targetDayIdx: targetDayIdx,
-            data: cleanedRows
-          });
-        }
+      } else {
+        console.warn('Não foi possível extrair dados estruturados de:', file.name);
       }
+      
       loadedCount++;
       if(loadedCount === files.length) {
         saveStateToStorage(); renderExternalChips(); renderDashboard();
@@ -451,7 +438,6 @@ function renderExternalChips() {
   `).join('');
 }
 
-/* ── INTERFACE E PROCESSAMENTO CENTRAL ── */
 function renderDayCards(){
   const grid = document.getElementById('daysGrid'); grid.innerHTML='';
   const blacklist = ITENS_IGNORADOS.map(i => i.trim().toUpperCase());
@@ -461,9 +447,9 @@ function renderDayCards(){
     let totalItensDia = 0;
     if(loaded) {
       totalItensDia = S.dayData[i].reduce((s,r)=>{
-        const name = String(r['Produto'] || r[0] || '').trim().toUpperCase();
+        const name = String(r['Produto'] || '').trim().toUpperCase();
         if(blacklist.includes(name)) return s;
-        return s + (parseFloat(r['Qtd']||r['Quantidade']||0)||0);
+        return s + (parseFloat(r['Qtd']||0)||0);
       },0);
     }
 
@@ -487,9 +473,9 @@ function loadDay(idx,input){
   const file=input.files[0]; if(!file)return;
   const reader=new FileReader();
   reader.onload=e=>{
-    const p=Papa.parse(e.target.result,{header:true,skipEmptyLines:true,dynamicTyping:true});
-    if(!p.data.length){alert('CSV vazio.');return;}
-    S.dayData[idx]=p.data; saveStateToStorage(); renderDayCards(); renderDashboard();
+    const cleanedRows = parseAgressiveCSV(e.target.result);
+    if(!cleanedRows.length){alert('Não foi possível identificar dados válidos neste arquivo.');return;}
+    S.dayData[idx]=cleanedRows; saveStateToStorage(); renderDayCards(); renderDashboard();
   };
   reader.readAsText(file,'UTF-8');
 }
@@ -507,24 +493,22 @@ function processData(){
   const blacklist = ITENS_IGNORADOS.map(i => i.trim().toUpperCase());
   const map={}, dayTotals=[0,0,0,0,0,0];
 
-  // 1. Vendas Internas
   loadedIdx.forEach(idx=>{
     dayData[idx].forEach(r=>{
       const name=String(r['Produto']||'').trim().toUpperCase(); 
       if(!name || blacklist.includes(name)) return;
-      const q=parseFloat(r['Qtd']||r['Quantidade']||0);
-      if(!map[name]) map[name]={name,byDay:[0,0,0,0,0,0],externalByDay:[0,0,0,0,0,0],totalQtd:0,promo:false};
+      const q=parseFloat(r['Qtd']||0);
+      if(!map[name]) map[name]={name,byDay:[0,0,0,0,0,0],externalByDay:[0,0,0,0,0,0],totalQtd:0};
       map[name].byDay[idx]+=q; map[name].totalQtd+=q;
     });
   });
 
-  // 2. Romaneios Externos Direcionados Dinamicamente por Data
   externalLogs.forEach(log => {
     log.data.forEach(r => {
       const name=String(r.Produto).trim().toUpperCase();
       if(!name || blacklist.includes(name)) return;
       const q=parseFloat(r.Qtd||0);
-      if(!map[name]) map[name]={name,byDay:[0,0,0,0,0,0],externalByDay:[0,0,0,0,0,0],totalQtd:0,promo:false};
+      if(!map[name]) map[name]={name,byDay:[0,0,0,0,0,0],externalByDay:[0,0,0,0,0,0],totalQtd:0};
       
       map[name].externalByDay[log.targetDayIdx] += q;
       map[name].totalQtd += q;
@@ -551,7 +535,6 @@ function processData(){
     return{
       ...p,
       avgReal,
-      metaDay: Math.ceil(avgReal*mult) + p.externalByDay.reduce((a,b)=>a+b,0)/6,
       projWeek: calculatedWeekMeta.reduce((a,b)=>a+b,0),
       allocatedDays: calculatedWeekMeta,
       tier: getTier(avgReal)
@@ -563,7 +546,6 @@ function processData(){
 
 function getTier(a){if(a>=20)return'Alta demanda';if(a>=10)return'Demanda média';if(a>=4)return'Demanda baixa';return'Pontual';}
 function pillClass(t){return{'Alta demanda':'p-alta','Demanda média':'p-media','Demanda baixa':'p-baixa','Pontual':'p-pont'}[t]||'p-pont';}
-function barColor(t){return{'Alta demanda':'#2a78d6','Demanda média':'#1baf7a','Demanda baixa':'#eda100','Pontual':'#888780'}[t]||'#888780';}
 function cap(s){return(s||'').toLowerCase().replace(/\b\w/g,c=>c.toUpperCase());}
 
 function switchMainView(mode) {
