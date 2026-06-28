@@ -16,14 +16,13 @@
   --media-c:#166534;--media-bg:#DCFCE7;--media-bdr:#86EFAC;
   --baixa-c:#854D0E;--baixa-bg:#FEF9C3;--baixa-bdr:#FDE047;
   --pont-c:#374151;--pont-bg:#F3F4F6;--pont-bdr:#D1D5DB;
-  --promo-c:#9D174D;--promo-bg:#FCE7F3;--promo-bdr:#F9A8D4;
   --radius:8px;--radius-lg:12px;
   --shadow-sm:0 1px 3px rgba(0,0,0,.08);--shadow-md:0 2px 8px rgba(0,0,0,.10);
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Inter',system-ui,sans-serif;background:var(--surface2);color:var(--ink);font-size:14px;line-height:1.5;min-height:100vh}
 button{cursor:pointer;font-family:inherit}
-input{font-family:inherit}
+input, textarea{font-family:inherit}
 
 .topbar{background:var(--navy);height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 1.5rem;position:sticky;top:0;z-index:200;box-shadow:0 2px 8px rgba(0,0,0,.2)}
 .topbar-brand{display:flex;align-items:center;gap:8px;color:#fff;font-size:14px;font-weight:700;letter-spacing:.01em}
@@ -52,9 +51,13 @@ input[type=range]{width:130px;accent-color:var(--brew)}
 .margin-info{font-size:11px;color:var(--muted);line-height:1.5}
 
 .external-panel{background:#F4EFE6;border:1px solid var(--border-md);border-radius:var(--radius-lg);padding:1rem;margin-bottom:1.25rem}
-.external-upload-zone{background:#fff;border:2px dashed var(--brew);border-radius:var(--radius);padding:1.2rem;text-align:center;position:relative;cursor:pointer}
+.external-grid-split {display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.external-upload-zone{background:#fff;border:2px dashed var(--brew);border-radius:var(--radius);padding:1.2rem;text-align:center;position:relative;cursor:pointer;display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:95px}
 .external-upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
-.external-list{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.paste-zone {background:#fff;border:1px solid var(--border-md);border-radius:var(--radius);padding:8px;display:flex;flex-direction:column;gap:6px}
+.paste-zone textarea {width:100%;height:60px;font-size:12px;border:1px solid var(--border);border-radius:4px;padding:6px;resize:none;outline:none}
+.paste-zone textarea:focus {border-color:var(--brew)}
+.external-list{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;grid-column: span 2}
 .external-chip{background:var(--navy);color:#fff;font-size:11px;padding:5px 12px;border-radius:99px;display:flex;align-items:center;gap:8px;box-shadow:var(--shadow-sm)}
 .external-chip .date-tag{background:var(--brew);color:#fff;padding:1px 5px;border-radius:4px;font-size:9px;font-weight:700}
 .external-chip button{background:transparent;border:none;color:rgba(255,255,255,0.6);font-size:12px;font-weight:700;padding:0 2px}
@@ -89,8 +92,6 @@ input[type=range]{width:130px;accent-color:var(--brew)}
 .kpi.brew .kpi-val{color:var(--brew)}
 .kpi.blue .kpi-val{color:var(--alta-c)}
 .kpi.green .kpi-val{color:var(--media-c)}
-
-.disclaimer{background:var(--foam);border:0.5px solid #E2C97A;border-left:4px solid var(--brew);border-radius:0 var(--radius) var(--radius) 0;padding:.7rem 1rem;font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:1.25rem}
 
 .critical-panel{background:#FFF5F5;border:0.5px solid #FEB2B2;border-radius:var(--radius-lg);padding:1rem;margin-bottom:1.25rem;display:none}
 .critical-title{font-size:12px;font-weight:700;color:#C53030;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.5rem}
@@ -137,6 +138,7 @@ tfoot td.r{text-align:right}
   .kpi-grid{grid-template-columns:repeat(2,1fr)}
   .chart-row{grid-template-columns:1fr}
   .breakdown-row{grid-template-columns:repeat(4,1fr)}
+  .external-grid-split {grid-template-columns:1fr}
 }
 </style>
 </head>
@@ -173,18 +175,29 @@ tfoot td.r{text-align:right}
     </div>
   </div>
 
-  <!-- UPLOAD DE ROMANEIOS EXTERNOS SIMULTÂNEOS -->
+  <!-- CONSOLIDAÇÃO INTELIGENTE -->
   <div class="external-panel">
-    <div class="sec-label" style="margin-bottom: 0.4rem; color: var(--navy)">📦 Romaneios de Lojas Externas (Consolidação com Leitura de Data)</div>
-    <div class="external-upload-zone">
-      <span>📂 Clique ou Arraste múltiplos arquivos convertidos (CSV) para processamento inteligente</span>
-      <input type="file" multiple accept=".csv" onchange="loadMultipleExternals(this)">
+    <div class="sec-label" style="margin-bottom: 0.4rem; color: var(--navy)">📦 Romaneios de Lojas Externas (Consolidação via Arquivo ou Copiar/Colar)</div>
+    
+    <div class="external-grid-split">
+      <!-- Opção A: Arquivo -->
+      <div class="external-upload-zone">
+        <span>📂 Arraste ou clique para anexar arquivos (.csv ou .txt)</span>
+        <input type="file" multiple accept=".csv,.txt" onchange="loadMultipleExternals(this)">
+      </div>
+      
+      <!-- Opção B: Copiar e Colar Alternativo -->
+      <div class="paste-zone">
+        <textarea id="pasteInput" placeholder="FALHOU O ANEXO? Abra o PDF/Excel, dê Ctrl+C nos dados e dê Ctrl+V aqui dentro..."></textarea>
+        <button class="btn btn-brew" style="padding:4px; font-size:11px" onclick="processPastedText()">⚡ Processar Texto Copiado</button>
+      </div>
+      
+      <div class="external-list" id="externalList"></div>
     </div>
-    <div class="external-list" id="externalList"></div>
   </div>
 
   <!-- DAY CARDS -->
-  <div class="sec-label">Upload de Vendas por Dia</div>
+  <div class="sec-label">Upload de Vendas por Dia (Aceita .csv ou .txt)</div>
   <div class="days-grid" id="daysGrid"></div>
 
   <!-- CRITICAL PRODUCTS -->
@@ -344,36 +357,30 @@ function matchDateToDayIndex(dateString) {
   return idx;
 }
 
-/* ── LEITOR ULTRA-ROBUSTO DE LINHAS SEM CABEÇALHO FIXO ── */
 function parseAgressiveCSV(rawText) {
-  // Substitui quebras de linha estranhas e limpa espaços vazios
   const lines = rawText.split(/\r?\n/);
   let cleanedRows = [];
 
   lines.forEach(line => {
     if(!line.trim()) return;
     
-    // Divide por ponto e vírgula ou vírgula dinamicamente
-    let cells = line.includes(';') ? line.split(';') : line.split(',');
-    cells = cells.map(c => c.replace(/^["']|["']$/g, '').trim()); // Limpa aspas
+    let cells = line.includes('\t') ? line.split('\t') : (line.includes(';') ? line.split(';') : line.split(','));
+    cells = cells.map(c => c.replace(/^["']|["']$/g, '').trim());
 
     if(cells.length < 2) return;
 
     let name = '';
     let qty = 0;
 
-    // A lógica tenta caçar onde está o texto descritivo e onde está o valor numérico puro
     for(let i=0; i<cells.length; i++) {
       let cell = cells[i];
       if(!cell) continue;
 
       let parsedNum = parseFloat(cell.replace(/[^\d.,-]/g, '').replace(',', '.'));
       
-      // Se for um número válido e pequeno (evitando códigos de barras ou IDs longos)
       if(!isNaN(parsedNum) && parsedNum > 0 && parsedNum < 10000 && !name.includes(cell)) {
         qty = parsedNum;
       } else if (cell.length > 2 && isNaN(Number(cell))) {
-        // Se for texto longo, assumimos que é o nome do produto
         if(!name) name = cell;
       }
     }
@@ -409,8 +416,6 @@ function loadMultipleExternals(input) {
           targetDayIdx: targetDayIdx,
           data: cleanedRows
         });
-      } else {
-        console.warn('Não foi possível extrair dados estruturados de:', file.name);
       }
       
       loadedCount++;
@@ -421,6 +426,29 @@ function loadMultipleExternals(input) {
     reader.readAsText(file, 'UTF-8');
   }
   input.value = '';
+}
+
+function processPastedText() {
+  const text = document.getElementById('pasteInput').value;
+  if(!text.trim()) { alert('Cole os dados antes de processar!'); return; }
+
+  const detectedDate = extractDataFromText(text);
+  const targetDayIdx = matchDateToDayIndex(detectedDate);
+  const cleanedRows = parseAgressiveCSV(text);
+
+  if(cleanedRows.length) {
+    S.externalLogs.push({
+      id: Date.now() + Math.random().toString(36).substr(2, 5),
+      filename: "Dados Copiados " + (detectedDate || "Manual"),
+      detectedDate: detectedDate || 'Sáb (Geral)',
+      targetDayIdx: targetDayIdx,
+      data: cleanedRows
+    });
+    document.getElementById('pasteInput').value = '';
+    saveStateToStorage(); renderExternalChips(); renderDashboard();
+  } else {
+    alert('Não conseguimos identificar produtos e quantidades nesse texto. Tente copiar as colunas de forma limpa.');
+  }
 }
 
 function removeExternal(id) {
@@ -457,7 +485,7 @@ function renderDayCards(){
     card.className='day-card'+(sat?' saturday':'')+(loaded?' loaded':'');
     card.innerHTML=`
       ${loaded?`<button class="dc-remove" onclick="removeDay(event,${i})">✕</button>`:''}
-      <input type="file" accept=".csv" onchange="loadDay(${i},this)" ${loaded?'style="display:none"':''}>
+      <input type="file" accept=".csv,.txt" onchange="loadDay(${i},this)" ${loaded?'style="display:none"':''}>
       <div class="dc-icon">${loaded?'✅':sat?'📦':'📂'}</div>
       <div class="dc-name">${DAY_SHORT[i]}${sat?' ×2':''}</div>
       <div class="dc-date">${date}</div>
@@ -594,6 +622,7 @@ function renderDashboard(){
   renderDashboardStructure(); renderCharts();
 }
 
+/* ── ALTERAÇÃO DE EXIBIÇÃO DA COLUNA "ROMANEIO DO DIA" ── */
 function renderDashboardStructure() {
   const {products,activeFilter,currentView} = S;
   const filtered = activeFilter==='todos'?products:products.filter(p=>p.tier===activeFilter);
@@ -607,7 +636,7 @@ function renderDashboardStructure() {
     foot.innerHTML = `<td>TOTAL</td><td></td><td class="r">${filtered.reduce((s,p)=>s+p.projWeek,0).toLocaleString('pt-BR')} un</td>`;
   } else {
     const dayIdx = parseInt(currentView);
-    head.innerHTML = `<tr><th>Produto</th><th>Perfil</th><th class="r">Venda (CSV)</th><th class="r" style="color:var(--brew)">Externa do Dia</th><th class="r col-proj">👉 PRODUÇÃO DO DIA</th></tr>`;
+    head.innerHTML = `<tr><th>Produto</th><th>Perfil</th><th class="r">Venda (CSV)</th><th class="r" style="color:var(--brew)">Romaneio do dia</th><th class="r col-proj">👉 PRODUÇÃO DO DIA</th></tr>`;
     
     let rowsHtml = filtered.map(p => {
       const q = p.allocatedDays[dayIdx];
