@@ -1,693 +1,163 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Brewteco — Planejamento Semanal de Produção</title>
-<meta name="description" content="Dashboard de planejamento semanal da cozinha central Brewteco.">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-<style>
-:root{
-  --navy:#0D2137;--brew:#C8860A;--brew-lt:#F5A623;--foam:#FDF6E3;
-  --ink:#1A1A1A;--muted:#6B6860;--border:#E2DDD4;--border-md:#C8C3BA;
-  --surface:#FFFFFF;--surface2:#F9F6F0;--surface3:#F3EFE8;
-  --alta-c:#1565C0;--alta-bg:#EBF3FD;--alta-bdr:#93C5FD;
-  --media-c:#166534;--media-bg:#DCFCE7;--media-bdr:#86EFAC;
-  --baixa-c:#854D0E;--baixa-bg:#FEF9C3;
-  --pont-c:#374151;--pont-bg:#F3F4F6;
-  --radius:8px;--radius-lg:12px;
-  --shadow:0 1px 3px rgba(0,0,0,.08);
-}
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Inter',system-ui,sans-serif;background:var(--surface2);color:var(--ink);font-size:14px;line-height:1.5;min-height:100vh}
-button,input,textarea,select{font-family:inherit;cursor:pointer}
-textarea{cursor:text}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciador Operacional</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #18bc9c;
+            --background-color: #f8f9fa;
+            --text-color: #333;
+            --card-bg: #ffffff;
+        }
 
-/* TOPBAR COM PADRÃO DE AZULEJOS REPETIDOS CORRIGIDO */
-.topbar{
-  background-color: var(--navy);
-  background-image: url("azulejo brewteco.jpg"); /* Nome novo e extensão .jpg */
-  background-repeat: repeat;
-  background-size: 56px 56px; 
-  height: 56px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 1.5rem;
-  position: sticky;
-  top: 0;
-  z-index: 200;
-  box-shadow: 0 2px 8px rgba(0,0,0,.15);
-}
-.brand{display:flex;align-items:center;gap:12px;color:var(--navy)}
-.brand img{height:32px;width:auto;display:flex;align-items:center;object-fit:contain}
-.brand .sep{color:rgba(13,33,55,.4);font-size:14px;font-weight:bold;text-shadow:0 1px 1px rgba(255,255,255,0.6)}
-.brand .sub{font-weight:700;color:var(--navy);font-size:13px;text-shadow:0 1px 1px rgba(255,255,255,0.8)}
-.topbar-right{display:flex;align-items:center;gap:8px}
-.brew-badge{background:var(--navy);color:#fff;font-size:11px;font-weight:600;padding:4px 10px;border-radius:99px;box-shadow:var(--shadow)}
-.btn-bar{background:rgba(255,255,255,0.9);border:1px solid var(--navy);color:var(--navy);font-size:11px;font-weight:700;padding:5px 12px;border-radius:6px;transition:all .15s;box-shadow:var(--shadow)}
-.btn-bar:hover{background:var(--navy);color:#fff}
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
 
-/* PAGE */
-.page{max-width:1060px;margin:0 auto;padding:1.5rem}
-.sec{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.6rem}
+        header {
+            width: 100%;
+            max-width: 800px;
+            text-align: center;
+            padding: 20px 0;
+            margin-bottom: 20px;
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
 
-/* CARD / PANEL */
-.card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:1.1rem 1.25rem;margin-bottom:1.25rem;box-shadow:var(--shadow)}
+        h1 {
+            margin: 0;
+            font-size: 24px;
+        }
 
-/* SETUP */
-.setup-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:.75rem}
-.setup-row:last-child{margin-bottom:0}
-.slabel{font-size:12px;color:var(--muted);font-weight:500;white-space:nowrap}
-input[type=date]{border:0.5px solid var(--border-md);border-radius:6px;padding:5px 10px;font-size:12px;color:var(--ink);background:var(--surface);outline:none}
-input[type=date]:focus{border-color:var(--brew)}
-.btn{border:none;border-radius:6px;font-size:12px;font-weight:600;padding:5px 14px;transition:opacity .15s}
-.btn:hover{opacity:.85}
-.btn-brew{background:var(--brew);color:#fff}
-.btn-ghost{background:var(--border);color:var(--ink)}
-.btn-blue{background:var(--alta-c);color:#fff}
-.btn-sm{padding:3px 10px;font-size:11px}
-.mval{font-size:14px;font-weight:700;color:var(--brew);min-width:38px;text-align:center}
-input[type=range]{width:130px;accent-color:var(--brew)}
-.minfo{font-size:11px;color:var(--muted);line-height:1.5}
+        main {
+            width: 100%;
+            max-width: 800px;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
 
-/* IMPORT PANEL */
-.import-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.drop-zone{background:var(--foam);border:2px dashed var(--brew);border-radius:var(--radius);padding:1.2rem;text-align:center;position:relative;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:100px;transition:background .15s}
-.drop-zone:hover,.drop-zone.drag{background:#FEF3CC;border-color:var(--brew-lt)}
-.drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
-.drop-icon{font-size:2rem}
-.drop-title{font-size:13px;font-weight:600;color:var(--navy)}
-.drop-sub{font-size:11px;color:var(--muted)}
-.paste-box{background:var(--surface);border:0.5px solid var(--border-md);border-radius:var(--radius);padding:10px;display:flex;flex-direction:column;gap:6px}
-.paste-box textarea{width:100%;height:70px;font-size:12px;border:0.5px solid var(--border);border-radius:4px;padding:6px;resize:none;outline:none;color:var(--ink)}
-.paste-box textarea:focus{border-color:var(--brew)}
-.parse-result{font-size:11px;margin-top:4px;display:none;font-weight:600}
-.parse-result.ok{color:var(--media-c)}
-.parse-result.err{color:#C53030}
-.chip-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;grid-column:span 2}
-.chip{background:var(--navy);color:#fff;font-size:11px;padding:5px 12px;border-radius:99px;display:flex;align-items:center;gap:8px;box-shadow:var(--shadow)}
-.chip .tag{background:var(--brew);color:#fff;padding:1px 6px;border-radius:4px;font-size:9px;font-weight:700}
-.chip button{background:transparent;border:none;color:rgba(255,255,255,.6);font-size:12px;font-weight:700;padding:0 2px}
-.chip button:hover{color:#ff8080}
-.import-hint{grid-column:span 2;font-size:11px;color:var(--muted);background:var(--surface3);border-radius:6px;padding:8px 12px;line-height:1.6}
+        .card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border-left: 5px solid var(--secondary-color);
+        }
 
-/* DAY CARDS */
-.days-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:1.25rem}
-.day-card{background:var(--surface);border:1.5px dashed var(--border-md);border-radius:var(--radius-lg);padding:.75rem .6rem;text-align:center;cursor:pointer;position:relative;transition:border-color .15s,background .15s;min-height:118px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
-.day-card:not(.locked):hover{border-color:var(--brew);background:var(--foam)}
-.day-card input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
-.day-card.loaded{border-style:solid;border-color:var(--media-bdr);background:var(--media-bg)}
-.day-card.sat{border-color:var(--alta-bdr);background:var(--alta-bg)}
-.day-card.sat.loaded{border-style:solid;border-color:var(--alta-c);background:#DBEAFE}
-.day-card.locked{background:var(--surface3);border-style:solid;border-color:var(--border);cursor:default;opacity:.6}
-.day-card.locked input{pointer-events:none}
-.dc-name{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
-.dc-date{font-size:11px;color:var(--muted);margin-bottom:2px}
-.dc-icon{font-size:1.5rem;line-height:1}
-.dc-st{font-size:10px;font-weight:600;margin-top:2px}
-.dc-st.ok{color:var(--media-c)}
-.dc-st.idle{color:var(--muted)}
-.dc-st.sat{color:var(--alta-c)}
-.dc-q{font-size:12px;font-weight:700;color:var(--alta-c)}
-.dc-rm{position:absolute;top:5px;right:6px;background:rgba(0,0,0,.1);border:none;border-radius:50%;width:18px;height:18px;font-size:10px;line-height:18px;text-align:center;color:var(--muted);display:none;padding:0}
-.day-card.loaded .dc-rm{display:block}
-.dc-rm:hover{background:rgba(200,0,0,.18);color:#c00}
+        .card h2 {
+            margin-top: 0;
+            color: var(--primary-color);
+            font-size: 18px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
 
-/* INTEGRATED MODAL FOR DATE VERIFICATION */
-.modal-overlay{position:fixed;inset:0;background:rgba(13,33,55,0.4);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;z-index:1000;opacity:0;pointer-events:none;transition:opacity .2s}
-.modal-overlay.active{opacity:1;pointer-events:auto}
-.modal-box{background:var(--surface);border-radius:var(--radius-lg);box-shadow:0 10px 25px rgba(0,0,0,.15);width:90%;max-width:440px;padding:1.5rem;border:1px solid var(--border-md);transform:scale(0.95);transition:transform .2s}
-.modal-overlay.active .modal-box{transform:scale(1)}
-.modal-title{font-size:14px;font-weight:700;color:var(--navy);margin-bottom:6px;display:flex;align-items:center;gap:6px}
-.modal-filename{font-size:12px;background:var(--surface3);padding:4px 8px;border-radius:4px;font-family:monospace;color:var(--muted);word-break:break-all;margin-bottom:12px}
-.modal-label{font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px}
-.modal-select-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:1.25rem}
-.modal-opt{border:1px solid var(--border-md);border-radius:6px;padding:8px 4px;text-align:center;background:var(--surface2);transition:all .15s}
-.modal-opt:hover{border-color:var(--brew);background:var(--foam)}
-.modal-opt.selected{border-color:var(--brew);background:var(--brew);color:#fff}
-.modal-opt .opt-day{font-weight:700;font-size:11px;text-transform:uppercase}
-.modal-opt .opt-date{font-size:10px;opacity:0.8}
-.modal-opt.selected .opt-date{opacity:1}
-.modal-actions{display:flex;justify-content:flex-end;gap:8px}
+        .btn {
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
 
-/* TABLES, KPIS & CHARTS */
-.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.25rem}
-.kpi{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:.85rem 1rem;box-shadow:var(--shadow)}
-.kpi-l{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
-.kpi-v{font-size:22px;font-weight:700;color:var(--navy);line-height:1.2;margin:3px 0}
-.kpi-s{font-size:11px;color:var(--muted)}
-.kpi.brew .kpi-v{color:var(--brew)}
-.kpi.blue .kpi-v{color:var(--alta-c)}
-.kpi.green .kpi-v{color:var(--media-c)}
-.disclaimer{background:var(--foam);border:0.5px solid #E2C97A;border-left:4px solid var(--brew);border-radius:0 var(--radius) var(--radius) 0;padding:.7rem 1rem;font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:1.25rem}
-.disclaimer strong{color:var(--navy)}
-.bk-row{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:1.25rem}
-.bk{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:.5rem .6rem;text-align:center;box-shadow:var(--shadow)}
-.bk.sat{border-color:var(--alta-bdr);background:var(--alta-bg)}
-.bk.dom{opacity:.5}
-.bk-day{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
-.bk-date{font-size:10px;color:var(--muted);margin:1px 0}
-.bk-val{font-size:15px;font-weight:700;color:var(--navy);margin:3px 0}
-.bk-val.proj{color:var(--muted);font-size:13px;font-style:italic;font-weight:500}
-.bk-sub{font-size:10px;color:var(--brew);font-weight:600}
-.view-tabs{display:flex;gap:5px;flex-wrap:wrap;padding:6px;background:var(--surface3);border-radius:8px;margin-bottom:1rem}
-.vt{font-size:11px;font-weight:600;padding:5px 12px;border-radius:6px;border:none;background:transparent;color:var(--muted);transition:all .12s}
-.vt:hover{background:var(--surface);color:var(--navy)}
-.vt.act{background:var(--navy);color:#fff}
-.vt.act-day{background:var(--brew);color:#fff}
-.crit{background:#FFF5F5;border:0.5px solid #FEB2B2;border-radius:var(--radius-lg);padding:1rem;margin-bottom:1.25rem}
-.crit-title{font-size:12px;font-weight:700;color:#C53030;text-transform:uppercase;letter-spacing:.04em;margin-bottom:.5rem}
-.crit-list{display:flex;gap:8px;flex-wrap:wrap}
-.crit-item{background:#fff;border:1px solid #FED7D7;padding:5px 12px;border-radius:6px;font-size:12px;font-weight:700;color:#9B2C2C}
-.table-wrap{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow);overflow:hidden;margin-bottom:1.25rem}
-table{width:100%;border-collapse:collapse}
-thead th{background:var(--navy);color:#fff;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:9px 10px;text-align:left;white-space:nowrap}
-thead th.r{text-align:right}
-thead th.col-proj{background:var(--alta-c)}
-thead th.col-sat{background:#185FA5}
-thead th.col-day{background:var(--media-c)}
-thead th.col-ext{background:var(--brew)}
-tbody tr{border-bottom:0.5px solid var(--border);transition:background .1s}
-tbody tr:hover{background:var(--foam)}
-tbody td{padding:8px 10px;font-size:12px;color:var(--ink)}
-tbody td.r{text-align:right;font-variant-numeric:tabular-nums}
-.pill{font-size:10px;font-weight:600;padding:2px 7px;border-radius:99px}
-.p-alta{background:var(--alta-bg);color:var(--alta-c)}
-.p-media{background:var(--media-bg);color:var(--media-c)}
-.p-baixa{background:var(--baixa-bg);color:var(--baixa-c)}
-.p-pont{background:var(--pont-bg);color:var(--pont-c)}
-.vproj{font-size:13px;font-weight:700;color:var(--alta-c)}
-.vsat{font-size:13px;font-weight:700;color:#185FA5}
-.vday{font-size:13px;font-weight:700;color:var(--media-c)}
-.vext{font-size:12px;font-weight:700;color:var(--brew)}
-.bar-mini{width:60px;height:4px;background:var(--border);border-radius:2px;display:inline-block;vertical-align:middle}
-.bar-f{height:4px;border-radius:2px}
-tfoot td{background:var(--navy);color:#fff;font-size:12px;font-weight:700;padding:9px 10px}
-tfoot td.r{text-align:right}
-.chart-card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.25rem;box-shadow:var(--shadow);margin-bottom:1.25rem}
-.chart-card h3{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.6rem}
-.empty{text-align:center;padding:3.5rem 2rem;color:var(--muted)}
-.empty .big{font-size:3rem;margin-bottom:.75rem}
-.empty p{font-size:13px;max-width:400px;margin:0 auto;line-height:1.7}
+        .btn:hover {
+            background-color: #128f76;
+        }
 
-@media(max-width:780px){
-  .days-grid{grid-template-columns:repeat(4,1fr)}
-  .kpi-row{grid-template-columns:repeat(2,1fr)}
-  .bk-row{grid-template-columns:repeat(4,1fr)}
-  .import-grid{grid-template-columns:1fr}
-  .import-hint{grid-column:span 1}
-  .chip-row{grid-column:span 1}
-}
-</style>
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        input[type="text"], select, textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+    </style>
 </head>
 <body>
 
-<nav class="topbar">
-  <div class="brand">
-    <!-- Ajustado para puxar o logo em JPG direto -->
-    <img src="Logo Brewteco.jpg" alt="Brewteco" class="brand-logo">
-    <span class="sep">|</span>
-    <span class="sub">Planejamento Semanal de Produção</span>
-  </div>
-  <div class="topbar-right">
-    <span class="brew-badge" id="weekBadge">sem dados</span>
-    <button class="btn-bar" onclick="exportCSV()">⬇ CSV</button>
-    <button class="btn-bar" onclick="exportRomaneio()">⬇ Romaneio</button>
-    <button class="btn-bar" onclick="window.print()">🖨 Imprimir</button>
-    <button class="btn-bar" onclick="resetAll()">✕ Limpar</button>
-  </div>
-</nav>
+    <header>
+        <h1>Painel de Controle Operacional</h1>
+    </header>
 
-<div class="page">
+    <main>
+        <section class="card">
+            <h2>Registrar Nova Avaliação</h2>
+            <div class="input-group">
+                <label for="unidade">Unidade / Loja:</label>
+                <input type="text" id="unidade" placeholder="Ex: Shopping Centro">
+            </div>
+            <div class="input-group">
+                <label for="status">Status Operacional:</label>
+                <select id="status">
+                    <option value="conforme">Conforme</option>
+                    <option value="atencao">Atenção</option>
+                    <option value="critico">Crítico</option>
+                </select>
+            </div>
+            <button class="btn" onclick="salvarDados()">Salvar Registro</button>
+        </section>
 
-  <!-- SETUP -->
-  <div class="card setup-card">
-    <div class="setup-row">
-      <span class="slabel">Semana:</span>
-      <input type="date" id="weekStart">
-      <button class="btn btn-brew" onclick="setWeek()">Definir</button>
-      <button class="btn btn-ghost" onclick="setThisWeek()">Esta semana</button>
-      <span style="font-size:11px;color:var(--muted)">A semana inicia sempre na segunda-feira.</span>
-    </div>
-    <div class="setup-row">
-      <span class="slabel">Margem de segurança:</span>
-      <input type="range" min="0" max="80" value="30" step="5" id="marginSlider" oninput="onMargin(this.value)">
-      <span class="mval" id="marginDisp">+30%</span>
-      <span class="minfo">Aplicada sobre a média real. Sábado produz ×2 (cobre domingo — folga da equipe).</span>
-    </div>
-  </div>
+        <section class="card">
+            <h2>Histórico de Atividades</h2>
+            <div id="historico">
+                <p style="color: #777;">Nenhum registro encontrado.</p>
+            </div>
+        </section>
+    </main>
 
-  <!-- IMPORT PANEL -->
-  <div class="card import-panel">
-    <div class="sec" style="margin-bottom:.7rem">📥 Importar Romaneios Externos (PDF convertido pelo Gemini, Excel, TXT...)</div>
-    <div class="import-grid">
+    <script>
+        function salvarDados() {
+            const unidade = document.getElementById('unidade').value;
+            const status = document.getElementById('status').value;
+            
+            if (!unidade) {
+                alert('Por favor, preencha o nome da unidade.');
+                return;
+            }
 
-      <div class="drop-zone" id="dropZone">
-        <input type="file" multiple accept=".csv,.txt,.tsv" onchange="handleExtFiles(this)" id="extFileInput">
-        <div class="drop-icon">📂</div>
-        <div class="drop-title">Arraste os arquivos aqui</div>
-        <div class="drop-sub">.csv, .txt, .tsv — qualquer formato que o Gemini gerar</div>
-      </div>
+            const historicoDiv = document.getElementById('historico');
+            if (historicoDiv.innerHTML.includes('Nenhum registro encontrado')) {
+                historicoDiv.innerHTML = '';
+            }
 
-      <div class="paste-box">
-        <div style="font-size:11px;font-weight:600;color:var(--navy);margin-bottom:2px">📋 Colar texto copiado</div>
-        <div style="font-size:11px;color:var(--muted)">Abra o PDF/Excel, selecione os dados, Ctrl+C e cole aqui:</div>
-        <textarea id="pasteInput" placeholder="Cole aqui o conteúdo do romaneio..."></textarea>
-        <div style="display:flex;align-items:center;gap:8px">
-          <button class="btn btn-brew btn-sm" onclick="processPaste()">⚡ Processar</button>
-          <span class="parse-result" id="pasteResult"></span>
-        </div>
-      </div>
-
-      <div class="import-hint">
-        <strong>💡 Funciona com qualquer formato que o Gemini gerar:</strong>
-        vírgula, ponto-e-vírgula, tab, texto livre com traço, espaçamento irregular, BOM UTF-8, números BR (1.234), colunas extras de valor — o sistema detecta e extrai automaticamente.<br>
-        <strong>Se o arquivo travar:</strong> abra no Excel → Ctrl+A → Ctrl+C → cole na caixa ao lado.
-      </div>
-
-      <div class="chip-row" id="chipRow"></div>
-    </div>
-  </div>
-
-  <!-- DAY CARDS -->
-  <div class="sec">Upload de vendas por dia — CSVs do dashboard</div>
-  <div class="days-grid" id="daysGrid"></div>
-
-  <!-- CRITICAL -->
-  <div class="crit" id="critPanel" style="display:none">
-    <div class="crit-title">🔥 Itens de volume crítico (meta diária > 40 un com margem)</div>
-    <div class="crit-list" id="critList"></div>
-  </div>
-
-  <!-- DASHBOARD -->
-  <div id="dashboard" style="display:none">
-    <div class="kpi-row" id="kpiRow"></div>
-    <div class="disclaimer" id="disclaBox"></div>
-    <div class="sec">Volume por dia da semana</div>
-    <div class="bk-row" id="bkRow"></div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
-      <div class="sec" style="margin:0">Cronograma de produção</div>
-      <div style="font-size:11px;color:var(--brew);font-weight:700" id="viewLbl">Visão Geral Semanal</div>
-    </div>
-    <div class="view-tabs" id="viewTabs"></div>
-    <div class="table-wrap">
-      <table><thead id="thead"></thead><tbody id="tbody"></tbody><tfoot><tr id="tfoot"></tr></tfoot></table>
-    </div>
-    <div class="chart-card" id="chartCard">
-      <h3>Top 15 — projeção semanal com margem</h3>
-      <div style="position:relative;height:260px"><canvas id="chartTop"></canvas></div>
-    </div>
-  </div>
-
-  <div class="empty" id="emptyState">
-    <div class="big">🍺</div>
-    <p>Defina a semana e faça upload dos CSVs de vendas por dia, ou importe romaneios externos (PDF convertido, Excel, TXT).</p>
-  </div>
-</div>
-
-<!-- DATA SELECTION CONFIRMATION MODAL -->
-<div class="modal-overlay" id="dateModal">
-  <div class="modal-box">
-    <div class="modal-title">📅 Confirmar Dia de Destino do Romaneio</div>
-    <p style="font-size:11px; color:var(--muted); margin-bottom: 8px;">Detectamos ou sugerimos o dia abaixo com base no arquivo.</p>
-    <div class="modal-filename" id="modalFilename">arquivo.csv</div>
-    <div class="modal-label">Para qual dia da semana é esta entrega?</div>
-    <div class="modal-select-grid" id="modalSelectGrid"></div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeDateModal()">Cancelar</button>
-      <button class="btn btn-brew" onclick="confirmDateModal()">Confirmar Importação</button>
-    </div>
-  </div>
-</div>
-
-<script>
-const NOISE_WORDS = new Set(['produto','item','descricao','descricao','qtd','quantidade','quant','total','subtotal','valor','preco','preco','unidade','un','pc','pcs','loja','data','romaneio','producao','producao','geral','observacao','observacao','categoria','cat','litros','litro','kg','g','ml','l','embalagem','ref','codigo','codigo','nome','descr','und','nro','nr','seq','no','estornos','grupos','grupo','eventos','evento','bar','litros']);
-const SKIP_START = ['total','subtotal','geral','observ'];
-
-function _norm(s) { return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z]/g,''); }
-function _isNoise(token) {
-  if (!token || token.trim().length < 2) return true;
-  const n = _norm(token);
-  if (NOISE_WORDS.has(n) || SKIP_START.some(p => n.startsWith(p))) return true;
-  if (/^[\d.,R$%\s/\-]+$/.test(token)) return true;
-  if (/^\d{1,2}\/\d{1,2}(\/\d{2,4})?$/.test(token.trim())) return true;
-  return false;
-}
-function _cleanNum(s) {
-  if (s == null) return NaN;
-  s = String(s).trim().replace(/\s/g,'').replace(/[R$]/gi,'').replace(/\b(unidades?|un|kg|pcs?|g|ml)\s*$/i,'').trim();
-  if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(s)) s = s.replace(/\./g,'').replace(',','.'); else s = s.replace(',','.');
-  const n = parseFloat(s);
-  return (isNaN(n) || n <= 0 || n >= 10000) ? NaN : n;
-}
-function _detectDelim(text) {
-  const sample = text.slice(0,3000);
-  return ['\t',';',',','|'].map(d => ({ d, n:(sample.match(new RegExp('\\'+d,'g'))||[]).length })).sort((a,b)=>b.n-a.n).find(x => x.n >= 3)?.d || null;
-}
-
-function parseUniversal(rawText) {
-  let text = rawText.replace(/^\uFEFF/,'');
-  const lines = text.split(/\r?\n|\r/);
-  const delim = _detectDelim(text);
-  const results = [];
-  if (delim) {
-    let nameIdx = -1, qtyIdx = -1, headerFound = false;
-    for (const line of lines) {
-      const raw = line.trim(); if (!raw) continue;
-      const cells = raw.split(delim).map(c => c.replace(/^["'\s]+|["'\s]+$/g,'').trim());
-      if (!headerFound) {
-        const normed = cells.map(_norm);
-        const ni = normed.findIndex(c => ['produto','item','descricao','nome'].some(k => c===k||c.startsWith(k)));
-        const qi = normed.findIndex(c => ['qtd','quant','quantidade'].some(k => c===k||c.startsWith(k)));
-        if (ni >= 0 && qi >= 0) { nameIdx = ni; qtyIdx = qi; headerFound = true; continue; }
-        const fn = _cleanNum(cells[0]);
-        if (isNaN(fn) && !_isNoise(cells[0]) && cells[0].length > 2) {
-          const qi2 = cells.findIndex((c,i) => i > 0 && !isNaN(_cleanNum(c)));
-          if (qi2 > 0) { nameIdx = 0; qtyIdx = qi2; headerFound = true; }
+            const novoItem = document.createElement('p');
+            novoItem.style.padding = '8px';
+            novoItem.style.borderBottom = '1px solid #eee';
+            novoItem.innerHTML = `<strong>${unidade}</strong> - Status: <span style="color: ${status === 'conforme' ? 'green' : status === 'atencao' ? 'orange' : 'red'}">${status.toUpperCase()}</span>`;
+            
+            historicoDiv.appendChild(novoItem);
+            
+            // Limpa o input
+            document.getElementById('unidade').value = '';
         }
-      }
-      if (nameIdx < 0 || cells.length <= qtyIdx) continue;
-      const name = cells[nameIdx], qty = _cleanNum(cells[qtyIdx]);
-      if (!_isNoise(name) && !isNaN(qty)) results.push({ Produto: name, Qtd: qty });
-    }
-    if (results.length >= 1) return results.filter(r => !_isNoise(r.Produto));
-  }
-  const rSep = /^(.+?)\s*[-–—:]\s*(\d[\d.,]*)\s*(?:unidades?|un|kg|pcs?|g|ml)?\s*$/i;
-  const rTrail = /^(.{3,}?)\s{2,}(\d{1,4}(?:[.,]\d{0,3})?)\s*(?:unidades?|un|kg|pcs?)?\s*$/i;
-  for (const line of lines) {
-    const raw = line.trim(); if (!raw || raw.length < 4) continue;
-    let name='', qty=NaN, m1 = raw.match(rSep);
-    if (m1) { name=m1[1].trim(); qty=_cleanNum(m1[2]); } else { const m2 = raw.match(rTrail); if (m2) { name=m2[1].trim(); qty=_cleanNum(m2[2]); } }
-    if (!_isNoise(name) && !isNaN(qty) && name.length > 2) results.push({ Produto: name, Qtd: qty });
-  }
-  return results;
-}
+    </script>
 
-const IGNORADOS = new Set(['LINGUICA TOSCANA','BATATA FRITA','FILE TILAPIA','BACON BURGUER','CALDINHO FEIJAO','BOBO CAMARAO','BATATA CHEDDAR BACON','BURGER CARIOQUISSIMO','PAO ALHO','FRANGO A PASSARINHO','RABANADA DOCE LEITE','ESPETO CORACAO','CAESAR SALAD','SOBREMESA RESTAURANT WEEK','PUDIM LEITE','PRINCIPAL RESTAURANT WEEK','ENTRADA RESTAURANT WEEK','MIX TROPICAL','FALAFEL','SORVETE CREME 2 BOLAS','BURACO QUENTE VEGETARIANO','BRIGADEIRO COLHER','RABANADA ANIVERSARIO','ARROZ BRANCO','BATATA PORTUGUESA','FEIJAO PRETO'].map(s => _norm(s)));
-function isIgnorado(name) { return IGNORADOS.has(_norm(name)); }
-
-const DAYS = ['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo'];
-const DSHORT = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
-
-let S = {
-  weekDates: ['','','','','','',''],
-  dayData: [null,null,null,null,null,null],
-  externals: [],
-  margin: 30,
-  view: 'geral',
-  products: [],
-  dayTotals: [0,0,0,0,0,0],
-  nLoaded: 0,
-  loadedIdx: [],
-};
-let CHARTS = { top: null };
-let pendingImport = null;
-
-function save() {
-  if (!S.weekDates[0]) return;
-  localStorage.setItem('bw_v3_state', JSON.stringify({ weekDates: S.weekDates, margin: S.margin, dayData: S.dayData, externals: S.externals }));
-}
-
-function loadSaved() {
-  const raw = localStorage.getItem('bw_v3_state'); if (!raw) return;
-  try {
-    const p = JSON.parse(raw);
-    S.weekDates = p.weekDates || S.weekDates;
-    S.margin = p.margin || 30;
-    S.dayData = p.dayData || [null,null,null,null,null,null];
-    S.externals = p.externals || [];
-    document.getElementById('marginSlider').value = S.margin;
-    document.getElementById('marginDisp').textContent = '+' + S.margin + '%';
-    if (S.weekDates[0]) document.getElementById('weekBadge').textContent = S.weekDates[0]+' – '+S.weekDates[5];
-    renderCards(); renderChips(); renderDashboard();
-  } catch(e) { console.warn('Failed to load saved state', e); }
-}
-
-function setThisWeek() { document.getElementById('weekStart').value = new Date().toISOString().slice(0,10); setWeek(); }
-function setWeek() {
-  const v = document.getElementById('weekStart').value; if (!v) { alert('Selecione uma data.'); return; }
-  const base = new Date(v+'T12:00:00'), diff = base.getDay()===0 ? -6 : 1-base.getDay(), mon = new Date(base); mon.setDate(base.getDate()+diff);
-  for (let i=0; i<7; i++) { const d = new Date(mon); d.setDate(mon.getDate()+i); S.weekDates[i] = d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}); }
-  document.getElementById('weekBadge').textContent = S.weekDates[0]+' – '+S.weekDates[5];
-  save(); renderCards(); renderDashboard();
-}
-function onMargin(v) { S.margin = parseInt(v); document.getElementById('marginDisp').textContent = '+'+v+'%'; save(); renderDashboard(); }
-
-function smartDetectDateIndex(filename, contentText) {
-  const fileDateMatch = filename.match(/(\d{2})[\/_](\d{2})/);
-  if (fileDateMatch) {
-    const formatted = fileDateMatch[1] + '/' + fileDateMatch[2];
-    const idx = S.weekDates.indexOf(formatted);
-    if (idx >= 0 && idx < 6) return idx;
-  }
-  const contentDateMatch = contentText.match(/(\d{2})\/(\d{2})/g);
-  if (contentDateMatch) {
-    for (let m of contentDateMatch) {
-      const idx = S.weekDates.indexOf(m);
-      if (idx >= 0 && idx < 6) return idx;
-    }
-  }
-  return 5;
-}
-
-function openDateModal(label, rows, initialIdx) {
-  pendingImport = { label, rows, selectedIdx: initialIdx };
-  document.getElementById('modalFilename').textContent = label;
-  
-  const grid = document.getElementById('modalSelectGrid');
-  grid.innerHTML = [0,1,2,3,4,5].map(i => `
-    <div class="modal-opt ${i === initialIdx ? 'selected' : ''}" onclick="selectModalDay(${i})" id="opt-day-${i}">
-      <div class="opt-day">${DSHORT[i]}</div>
-      <div class="opt-date">${S.weekDates[i] || '—'}</div>
-    </div>
-  `).join('');
-  
-  document.getElementById('dateModal').classList.add('active');
-}
-
-function selectModalDay(idx) {
-  if (!pendingImport) return;
-  pendingImport.selectedIdx = idx;
-  [0,1,2,3,4,5].forEach(i => {
-    document.getElementById(`opt-day-${i}`).classList.remove('selected');
-  });
-  document.getElementById(`opt-day-${idx}`).classList.add('selected');
-}
-
-function closeDateModal() {
-  pendingImport = null;
-  document.getElementById('dateModal').classList.remove('active');
-}
-
-function confirmDateModal() {
-  if (!pendingImport) return;
-  S.externals.push({
-    id: Date.now() + '_' + Math.random().toString(36).slice(2,6),
-    label: pendingImport.label.length > 22 ? pendingImport.label.slice(0,20)+'…' : pendingImport.label,
-    targetIdx: pendingImport.selectedIdx,
-    rows: pendingImport.rows
-  });
-  save(); renderChips(); renderDashboard();
-  closeDateModal();
-}
-
-function handleExtFiles(input) {
-  const files = [...input.files]; if (!files.length) return;
-  
-  files.forEach(file => {
-    const reader = new FileReader();
-    reader.onload = e => {
-      const rows = parseUniversal(e.target.result);
-      if (!rows.length) { alert(`Não foi possível extrair dados válidos de ${file.name}`); return; }
-      const detectedIdx = smartDetectDateIndex(file.name, e.target.result);
-      openDateModal(file.name, rows, detectedIdx);
-    };
-    reader.readAsText(file, 'UTF-8');
-  });
-  input.value = '';
-}
-
-const dz = document.getElementById('dropZone');
-if (dz) {
-  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag'); });
-  dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
-  dz.addEventListener('drop', e => {
-    e.preventDefault(); dz.classList.remove('drag');
-    const files = [...e.dataTransfer.files].filter(f => /\.(csv|txt|tsv)$/i.test(f.name));
-    if (!files.length) { alert('Apenas arquivos .csv, .txt ou .tsv'); return; }
-    handleExtFiles({ files });
-  });
-}
-
-function processPaste() {
-  const text = document.getElementById('pasteInput').value;
-  const result = document.getElementById('pasteResult');
-  if (!text.trim()) { alert('Cole os dados antes de processar.'); return; }
-  const rows = parseUniversal(text);
-  if (!rows.length) {
-    result.textContent = '❌ Não foi possível extrair dados.';
-    result.className = 'parse-result err'; result.style.display='block'; return;
-  }
-  const detectedIdx = smartDetectDateIndex('Texto Colado', text);
-  document.getElementById('pasteInput').value = '';
-  openDateModal('Texto Colado', rows, detectedIdx);
-}
-
-function removeExt(id) { S.externals = S.externals.filter(x => x.id !== id); save(); renderChips(); renderDashboard(); }
-function renderChips() {
-  document.getElementById('chipRow').innerHTML = S.externals.map(x => `
-    <div class="chip">
-      <span>🏢 ${x.label}</span>
-      <span class="tag">${S.weekDates[x.targetIdx]||DSHORT[x.targetIdx]} · ${x.rows.length} itens</span>
-      <button onclick="removeExt('${x.id}')">✕</button>
-    </div>`).join('');
-}
-
-function renderCards() {
-  const grid = document.getElementById('daysGrid'); grid.innerHTML = '';
-  for (let i=0; i<6; i++) {
-    const loaded = !!S.dayData[i], sat = i===5;
-    const qtd = loaded ? S.dayData[i].reduce((s,r)=>{ const n=_norm(r.Produto||''); return IGNORADOS.has(n)?s:s+(parseFloat(r.Qtd)||0); },0) : 0;
-    const card = document.createElement('div');
-    card.className = 'day-card'+(sat?' sat':'')+(loaded?' loaded':'');
-    card.innerHTML = `
-      ${loaded?`<button class="dc-rm" onclick="removeDay(event,${i})">✕</button>`:''}
-      <input type="file" accept=".csv,.txt,.tsv" onchange="loadDayFile(${i},this)" ${loaded?'style="display:none"':''}>
-      <div class="dc-icon">${loaded?'✅':sat?'📦':'📂'}</div>
-      <div class="dc-name">${DSHORT[i]}${sat?' ×2':''}</div>
-      <div class="dc-date">${S.weekDates[i]||'—'}</div>
-      ${loaded ? `<div class="dc-q">${qtd.toLocaleString('pt-BR')} un</div><div class="dc-st ok">carregado</div>` : `<div class="dc-st ${sat?'sat':'idle'}">${sat?'Sáb + Dom':'Sem upload'}</div>`}`;
-    grid.appendChild(card);
-  }
-  const dom = document.createElement('div'); dom.className = 'day-card locked';
-  dom.innerHTML = `<div class="dc-icon">😴</div><div class="dc-name">Dom</div><div class="dc-date">${S.weekDates[6]||'—'}</div><div class="dc-st idle">Folga</div>`;
-  grid.appendChild(dom);
-}
-
-function loadDayFile(idx, input) {
-  const file = input.files[0]; if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    const rows = parseUniversal(e.target.result);
-    if (!rows.length) { alert('Falha ao processar arquivo diário.'); return; }
-    S.dayData[idx] = rows; save(); renderCards(); renderDashboard();
-  };
-  reader.readAsText(file, 'UTF-8');
-}
-function removeDay(evt, idx) { evt.stopPropagation(); S.dayData[idx] = null; save(); renderCards(); renderDashboard(); }
-
-function getTier(avg) { if (avg >= 20) return 'Alta demanda'; if (avg >= 10) return 'Demanda média'; if (avg >= 4) return 'Demanda baixa'; return 'Pontual'; }
-function pillClass(t) { return {'Alta demanda':'p-alta','Demanda média':'p-media','Demanda baixa':'p-baixa','Pontual':'p-pont'}[t]||'p-pont'; }
-function barColor(t) { return {'Alta demanda':'#2a78d6','Demanda média':'#1baf7a','Demanda baixa':'#eda100','Pontual':'#888780'}[t]||'#888780'; }
-function cap(s) { return (s||'').toLowerCase().replace(/\b\w/g,c=>c.toUpperCase()); }
-
-function processData() {
-  const { dayData, externals, margin } = S;
-  const loadedIdx = dayData.map((d,i)=>d?i:null).filter(i=>i!==null);
-  S.loadedIdx = loadedIdx; S.nLoaded = loadedIdx.length;
-  if (!loadedIdx.length && !externals.length) { S.products = []; return; }
-  const map = {}, dayTotals = [0,0,0,0,0,0], mult = 1 + margin/100;
-  
-  loadedIdx.forEach(idx => {
-    dayData[idx].forEach(r => {
-      const name = (r.Produto||r.produto||'').trim(); if (!name || isIgnorado(name)) return;
-      const q = parseFloat(r.Qtd||r.qtd||r.Quantidade||r.quantidade||0), key = name.toUpperCase();
-      if (!map[key]) map[key] = { name, byDay:[0,0,0,0,0,0], extByDay:[0,0,0,0,0,0], totalQtd:0 };
-      map[key].byDay[idx] += q; map[key].totalQtd += q;
-    });
-  });
-  externals.forEach(ext => {
-    ext.rows.forEach(r => {
-      const name = (r.Produto||r.produto||'').trim(); if (!name || isIgnorado(name)) return;
-      const q = parseFloat(r.Qtd||r.qtd||0), key = name.toUpperCase();
-      if (!map[key]) map[key] = { name, byDay:[0,0,0,0,0,0], extByDay:[0,0,0,0,0,0], totalQtd:0 };
-      map[key].extByDay[ext.targetIdx] += q; map[key].totalQtd += q;
-    });
-  });
-  S.products = Object.values(map).map(p => {
-    const dp = Math.max(loadedIdx.filter(i => p.byDay[i]>0).length, 1), avgReal = p.totalQtd / dp, metaDay = Math.ceil(avgReal * mult);
-    const allocDay = [0,0,0,0,0,0];
-    for (let i=0; i<6; i++) {
-      const base = S.dayData[i] ? Math.ceil(p.byDay[i] * mult) : (i===5 ? metaDay*2 : metaDay);
-      allocDay[i] = base + p.extByDay[i]; dayTotals[i] += allocDay[i];
-    }
-    return { ...p, avgReal, metaDay, satMeta: metaDay * 2, projWeek: allocDay.reduce((a,b)=>a+b,0), allocDay, tier: getTier(avgReal) };
-  }).sort((a,b) => b.projWeek - a.projWeek);
-  S.dayTotals = dayTotals;
-}
-
-function renderDashboard() {
-  processData();
-  if (!S.products.length) { document.getElementById('dashboard').style.display = 'none'; document.getElementById('emptyState').style.display = 'block'; return; }
-  document.getElementById('dashboard').style.display = 'block'; document.getElementById('emptyState').style.display = 'none';
-  const { products, dayTotals, nLoaded, margin, weekDates } = S;
-  const tProj = products.reduce((s,p)=>s+p.projWeek,0), tSat = dayTotals[5], avgDay = S.products.reduce((s,p)=>s+p.metaDay,0);
-
-  document.getElementById('kpiRow').innerHTML = `
-    <div class="kpi blue"><div class="kpi-l">Projeção semanal</div><div class="kpi-v">${tProj.toLocaleString('pt-BR')}</div><div class="kpi-s">+${margin}% margem</div></div>
-    <div class="kpi brew"><div class="kpi-l">Meta diária total</div><div class="kpi-v">${avgDay.toLocaleString('pt-BR')}</div><div class="kpi-s">itens/dia útil</div></div>
-    <div class="kpi green"><div class="kpi-l">Meta sábado (×2)</div><div class="kpi-v">${tSat.toLocaleString('pt-BR')}</div><div class="kpi-s">cobre sáb + dom</div></div>
-    <div class="kpi"><div class="kpi-l">Produtos ativos</div><div class="kpi-v">${products.length}</div><div class="kpi-s">filtros aplicados</div></div>`;
-
-  document.getElementById('disclaBox').innerHTML = `<strong>Como funciona:</strong> Média real sobre <strong>${nLoaded} dia(s)</strong>. Sábado = meta × 2 (cobre domingo).`;
-
-  document.getElementById('bkRow').innerHTML = [0,1,2,3,4,5,6].map(i => {
-    if (i===6) return `<div class="bk dom"><div class="bk-day">Dom</div><div class="bk-date">${weekDates[6]||'—'}</div><div class="bk-val" style="font-size:18px">😴</div><div class="bk-sub">folga</div></div>`;
-    const has = !!S.dayData[i], val = dayTotals[i]||0;
-    return `<div class="bk${i===5?' sat':''}">
-      <div class="bk-day">${DSHORT[i]}${i===5?' ×2':''}</div><div class="bk-date">${weekDates[i]||'—'}</div>
-      <div class="bk-val${has?'':' proj'}">${val.toLocaleString('pt-BR')}</div>
-    </div>`;
-  }).join('');
-
-  const crits = products.filter(p => p.metaDay > 40);
-  document.getElementById('critPanel').style.display = crits.length ? 'block' : 'none';
-  if (crits.length) document.getElementById('critList').innerHTML = crits.map(p=>`<div class="crit-item">🔥 ${cap(p.name)} — ${p.metaDay}/dia</div>`).join('');
-
-  renderViewTabs(); renderTable(); renderChart();
-}
-
-function renderViewTabs() {
-  const tabs = [{ id:'geral', label:'📋 Visão Geral', cls:'act' }, ...DSHORT.slice(0,6).map((s,i) => ({ id:String(i), label:`🗓 ${s}${i===5?' (×2)':''}`, cls:'act-day' }))];
-  document.getElementById('viewTabs').innerHTML = tabs.map(t => `<button class="vt ${S.view===t.id ? t.cls : ''}" onclick="switchView('${t.id}')">${t.label}</button>`).join('');
-}
-function switchView(v) { S.view = v; document.getElementById('chartCard').style.display = v==='geral' ? 'block' : 'none'; renderViewTabs(); renderTable(); }
-
-function renderTable() {
-  const { products, view } = S; const thead = document.getElementById('thead'), tbody = document.getElementById('tbody'), maxP = products[0]?.projWeek || 1;
-  if (view === 'geral') {
-    thead.innerHTML = `<tr><th>#</th><th>Produto</th><th>Perfil</th><th class="r">Real acum.</th><th class="r">Meta diária</th><th class="r col-proj">Projeção semana</th><th class="r col-sat">Sábado (×2)</th><th></th></tr>`;
-    tbody.innerHTML = products.map((p,i) => `<tr><td>${i+1}</td><td style="font-weight:500">${cap(p.name)}</td><td><span class="pill ${pillClass(p.tier)}">${p.tier}</span></td><td class="r">${p.totalQtd}</td><td class="r"><span class="vday">${p.metaDay}</span></td><td class="r"><span class="vproj">${p.projWeek}</span></td><td class="r"><span class="vsat">${p.satMeta}</span></td><td><div class="bar-mini"><div class="bar-f" style="width:${Math.round((p.projWeek/maxP)*100)}%;background:${barColor(p.tier)}"></div></div></td></tr>`).join('');
-  } else {
-    const di = parseInt(view);
-    thead.innerHTML = `<tr><th>#</th><th>Produto</th><th>Perfil</th><th class="r">Venda real</th><th class="r col-ext">Externo</th><th class="r col-proj">👉 PRODUZIR HOJE</th></tr>`;
-    const rows = products.filter(p => p.allocDay[di] > 0);
-    tbody.innerHTML = rows.map((p,i) => `<tr><td>${i+1}</td><td style="font-weight:700">${cap(p.name)}</td><td><span class="pill ${pillClass(p.tier)}">${p.tier}</span></td><td class="r">${S.dayData[di]?p.byDay[di]:'—'}</td><td class="r"><span class="vext">${p.extByDay[di]>0?p.extByDay[di]:'—'}</span></td><td class="r" style="background:var(--foam)"><span class="vproj">${p.allocDay[di]} un</span></td></tr>`).join('');
-  }
-}
-
-function renderChart() {
-  const top15 = S.products.slice(0,15); if (CHARTS.top) CHARTS.top.destroy();
-  const ctx = document.getElementById('chartTop');
-  if (ctx) {
-    CHARTS.top = new Chart(ctx, {
-      type: 'bar', data: { labels: top15.map(p => cap(p.name).slice(0,14)), datasets: [{ data:top15.map(p=>p.projWeek), backgroundColor:top15.map(p=>barColor(p.tier)) }] },
-      options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{grid:{display:false}},y:{grid:{color:'#E2DDD4'}}} }
-    });
-  }
-}
-
-function exportCSV() { _dlCSV(S.products.map(p=>[cap(p.name),p.tier,p.metaDay,p.projWeek]), 'producao.csv'); }
-function exportRomaneio() { _dlCSV(S.products.map(p=>[cap(p.name),p.metaDay,p.satMeta]), 'romaneio.csv'); }
-function _dlCSV(rows,name) { const csv=rows.map(r=>r.map(c=>'"'+String(c)+'"').join(',')).join('\n'); const blob=new Blob(['\uFEFF'+csv],{type:'text/csv'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=name; a.click(); }
-
-function resetAll() { localStorage.removeItem('bw_v3_state'); location.reload(); }
-
-/* INITIALIZATION */
-renderCards();
-setThisWeek();
-loadSaved();
-</script>
 </body>
 </html>
