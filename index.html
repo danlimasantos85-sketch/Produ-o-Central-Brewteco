@@ -193,7 +193,6 @@ tfoot td.r{text-align:right}
 .empty{text-align:center;padding:3.5rem 2rem;color:var(--muted)}
 .empty .big{font-size:3rem;margin-bottom:.75rem}
 .empty p{font-size:13px;max-width:400px;margin:0 auto;line-height:1.7}
-
 @media(max-width:780px){
   .days-grid{grid-template-columns:repeat(4,1fr)}
   .kpi-row{grid-template-columns:repeat(2,1fr)}
@@ -239,7 +238,7 @@ tfoot td.r{text-align:right}
       <span class="minfo">Aplicada sobre a média real. Sábado produz ×2 (cobre domingo — folga da equipe).</span>
     </div>
     
-    <!-- NOVO: GERENCIADOR DE MEDIDAS -->
+    <!-- GERENCIADOR DE MEDIDAS -->
     <hr style="border:0; border-top:1px dashed var(--border); margin: 12px 0;">
     <button class="btn config-toggle-btn" onclick="toggleConfigPanel()">⚙️ Configurar Unidades de Medida (Fatores)</button>
     <div id="configPanel" style="display:none;">
@@ -250,30 +249,25 @@ tfoot td.r{text-align:right}
 
   <!-- IMPORT PANEL -->
   <div class="card import-panel">
-    <div class="sec" style="margin-bottom:.7rem">📥 Importar Romaneios Externos (PDF convertido pelo Gemini, Excel, TXT...)</div>
+    <div class="sec" style="margin-bottom:.7rem">📥 Importar Romaneios Externos</div>
     <div class="import-grid">
-
       <div class="drop-zone" id="dropZone">
         <input type="file" multiple accept=".csv,.txt,.tsv" onchange="handleExtFiles(this)" id="extFileInput">
         <div class="drop-icon">📂</div>
         <div class="drop-title">Arraste os arquivos aqui</div>
-        <div class="drop-sub">.csv, .txt, .tsv — qualquer formato que o Gemini gerar</div>
+        <div class="drop-sub">.csv, .txt, .tsv</div>
       </div>
-
       <div class="paste-box">
         <div style="font-size:11px;font-weight:600;color:var(--navy);margin-bottom:2px">📋 Colar texto copiado</div>
-        <div style="font-size:11px;color:var(--muted)">Abra o PDF/Excel, selecione os dados, Ctrl+C e cole aqui:</div>
         <textarea id="pasteInput" placeholder="Cole aqui o conteúdo do romaneio..."></textarea>
         <div style="display:flex;align-items:center;gap:8px">
           <button class="btn btn-brew btn-sm" onclick="processPaste()">⚡ Processar</button>
           <span class="parse-result" id="pasteResult"></span>
         </div>
       </div>
-
       <div class="import-hint">
         <strong>💡 Conversão Automática de Medidas:</strong> O sistema memoriza o que você configurar acima. Se você disser que o "Anjo" é calculado em kg com fator 0.22, quando o sistema ler 100 unidades vendidas, ele mostrará a produção de 22kg automaticamente.
       </div>
-
       <div class="chip-row" id="chipRow"></div>
     </div>
   </div>
@@ -310,15 +304,14 @@ tfoot td.r{text-align:right}
 
   <div class="empty" id="emptyState">
     <div class="big">🍺</div>
-    <p>Defina a semana e faça upload dos CSVs de vendas por dia, ou importe romaneios externos (PDF convertido, Excel, TXT).</p>
+    <p>Defina a semana e faça upload dos CSVs de vendas por dia, ou importe romaneios externos.</p>
   </div>
 </div>
 
-<!-- DATA SELECTION CONFIRMATION MODAL -->
+<!-- MODAL -->
 <div class="modal-overlay" id="dateModal">
   <div class="modal-box">
     <div class="modal-title">📅 Confirmar Dia de Destino do Romaneio</div>
-    <p style="font-size:11px; color:var(--muted); margin-bottom: 8px;">Detectamos ou sugerimos o dia abaixo com base no arquivo.</p>
     <div class="modal-filename" id="modalFilename">arquivo.csv</div>
     <div class="modal-label">Para qual dia da semana é esta entrega?</div>
     <div class="modal-select-grid" id="modalSelectGrid"></div>
@@ -330,10 +323,27 @@ tfoot td.r{text-align:right}
 </div>
 
 <script>
-const NOISE_WORDS = new Set(['produto','item','descricao','descricao','qtd','quantidade','quant','total','subtotal','valor','preco','preco','unidade','un','pc','pcs','loja','data','romaneio','producao','producao','geral','observacao','observacao','categoria','cat','litros','litro','kg','g','ml','l','embalagem','ref','codigo','codigo','nome','descr','und','nro','nr','seq','no','estornos','grupos','grupo','eventos','evento','bar','litros']);
+const NOISE_WORDS = new Set(['produto','item','descricao','qtd','quantidade','quant','total','subtotal','valor','preco','unidade','un','pc','pcs','loja','data','romaneio','producao','geral','observacao','categoria','cat','litros','litro','kg','g','ml','l','embalagem','ref','codigo','nome','descr','und','nro','nr','seq','no','estornos','grupos','grupo','eventos','evento','bar']);
 const SKIP_START = ['total','subtotal','geral','observ'];
 
-// Dicionário padrão de conversões para os itens conhecidos
+// FILTRO ATUALIZADO: Contém apenas os 26 itens de revenda/cozinha local que você enviou
+const IGNORADOS = new Set([
+  'linguica toscana', 'batata frita', 'file tilapia', 'bacon burguer', 
+  'caldinho feijao', 'bobo camarao', 'batata cheddar bacon', 'burger carioquissimo burguer', 
+  'pao alho', 'frango a passarinho', 'rabanada doce leite', 'espeto coracao', 
+  'caesar salad', 'sobremesa restaurant week', 'pudim leite', 'principal restaurant week', 
+  'entrada restaurant week', 'mix tropical', 'falafel', 'sorvete creme 2 bolas', 
+  'buraco quente vegetariano', 'brigadeiro colher', 'rabanada aniversario', 
+  'arroz branco', 'batata portuguesa', 'feijao preto'
+].map(s => s.trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'')));
+
+function isIgnorado(name) { 
+  if(!name) return true;
+  const n = name.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  return IGNORADOS.has(n); 
+}
+
+// Schnitzel e Anjo mantidos e protegidos aqui no dicionário de conversão
 let MEDIDAS_DB = {
   'SCHNITZEL': { uni: 'kg', fator: 0.22 },
   'ANJO': { uni: 'kg', fator: 0.22 },
@@ -347,7 +357,6 @@ function _isNoise(token) {
   const n = _norm(token);
   if (NOISE_WORDS.has(n) || SKIP_START.some(p => n.startsWith(p))) return true;
   if (/^[\d.,R$%\s/\-]+$/.test(token)) return true;
-  if (/^\d{1,2}\/\d{1,2}(\/\d{2,4})?$/.test(token.trim())) return true;
   return false;
 }
 function _cleanNum(s) {
@@ -377,31 +386,22 @@ function parseUniversal(rawText) {
         const ni = normed.findIndex(c => ['produto','item','descricao','nome'].some(k => c===k||c.startsWith(k)));
         const qi = normed.findIndex(c => ['qtd','quant','quantidade'].some(k => c===k||c.startsWith(k)));
         if (ni >= 0 && qi >= 0) { nameIdx = ni; qtyIdx = qi; headerFound = true; continue; }
-        const fn = _cleanNum(cells[0]);
-        if (isNaN(fn) && !_isNoise(cells[0]) && cells[0].length > 2) {
-          const qi2 = cells.findIndex((c,i) => i > 0 && !isNaN(_cleanNum(c)));
-          if (qi2 > 0) { nameIdx = 0; qtyIdx = qi2; headerFound = true; }
-        }
       }
       if (nameIdx < 0 || cells.length <= qtyIdx) continue;
       const name = cells[nameIdx], qty = _cleanNum(cells[qtyIdx]);
-      if (!_isNoise(name) && !isNaN(qty)) results.push({ Produto: name, Qtd: qty });
+      if (!_isNoise(name) && !isNaN(qty) && !isIgnorado(name)) results.push({ Produto: name, Qtd: qty });
     }
-    if (results.length >= 1) return results.filter(r => !_isNoise(r.Produto));
+    if (results.length >= 1) return results.filter(r => !_isNoise(r.Produto) && !isIgnorado(r.Produto));
   }
-  const rSep = /^(.+?)\s*[-–—:]\s*(\d[\d.,]*)\s*(?:unidades?|un|kg|pcs?|g|ml)?\s*$/i;
-  const rTrail = /^(.{3,}?)\s{2,}(\d{1,4}(?:[.,]\d{0,3})?)\s*(?:unidades?|un|kg|pcs?)?\s*$/i;
+  const rSep = /^(.+?)\s*[-–—:]\s*(\d[\d.,]*)\s*/i;
   for (const line of lines) {
     const raw = line.trim(); if (!raw || raw.length < 4) continue;
     let name='', qty=NaN, m1 = raw.match(rSep);
-    if (m1) { name=m1[1].trim(); qty=_cleanNum(m1[2]); } else { const m2 = raw.match(rTrail); if (m2) { name=m2[1].trim(); qty=_cleanNum(m2[2]); } }
-    if (!_isNoise(name) && !isNaN(qty) && name.length > 2) results.push({ Produto: name, Qtd: qty });
+    if (m1) { name=m1[1].trim(); qty=_cleanNum(m1[2]); }
+    if (!_isNoise(name) && !isNaN(qty) && name.length > 2 && !isIgnorado(name)) results.push({ Produto: name, Qtd: qty });
   }
   return results;
 }
-
-const IGNORADOS = new Set(['LINGUICA TOSCANA','BATATA FRITA','FILE TILAPIA','BACON BURGUER','CALDINHO FEIJAO','BOBO CAMARAO','BATATA CHEDDAR BACON','BURGER CARIOQUISSIMO','PAO ALHO','FRANGO A PASSARINHO','RABANADA DOCE LEITE','ESPETO CORACAO','CAESAR SALAD','SOBREMESA RESTAURANT WEEK','PUDIM LEITE','PRINCIPAL RESTAURANT WEEK','ENTRADA RESTAURANT WEEK','MIX TROPICAL','FALAFEL','SORVETE CREME 2 BOLAS','BURACO QUENTE VEGETARIANO','BRIGADEIRO COLHER','RABANADA ANIVERSARIO','ARROZ BRANCO','BATATA PORTUGUESA','FEIJAO PRETO'].map(s => _norm(s)));
-function isIgnorado(name) { return IGNORADOS.has(_norm(name)); }
 
 const DAYS = ['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo'];
 const DSHORT = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
@@ -429,7 +429,6 @@ function save() {
 function loadSaved() {
   const savedMedidas = localStorage.getItem('bw_medidas_db');
   if (savedMedidas) { try { MEDIDAS_DB = JSON.parse(savedMedidas); } catch(e){} }
-
   const raw = localStorage.getItem('bw_v3_state'); if (!raw) return;
   try {
     const p = JSON.parse(raw);
@@ -441,12 +440,12 @@ function loadSaved() {
     document.getElementById('marginDisp').textContent = '+' + S.margin + '%';
     if (S.weekDates[0]) document.getElementById('weekBadge').textContent = S.weekDates[0]+' – '+S.weekDates[5];
     renderCards(); renderChips(); renderDashboard();
-  } catch(e) { console.warn('Failed to load saved state', e); }
+  } catch(e) {}
 }
 
 function setThisWeek() { document.getElementById('weekStart').value = new Date().toISOString().slice(0,10); setWeek(); }
 function setWeek() {
-  const v = document.getElementById('weekStart').value; if (!v) { alert('Selecione uma data.'); return; }
+  const v = document.getElementById('weekStart').value; if (!v) return;
   const base = new Date(v+'T12:00:00'), diff = base.getDay()===0 ? -6 : 1-base.getDay(), mon = new Date(base); mon.setDate(base.getDate()+diff);
   for (let i=0; i<7; i++) { const d = new Date(mon); d.setDate(mon.getDate()+i); S.weekDates[i] = d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}); }
   document.getElementById('weekBadge').textContent = S.weekDates[0]+' – '+S.weekDates[5];
@@ -454,7 +453,6 @@ function setWeek() {
 }
 function onMargin(v) { S.margin = parseInt(v); document.getElementById('marginDisp').textContent = '+'+v+'%'; save(); renderDashboard(); }
 
-/* FUNÇÕES DE CONFIGURAÇÃO DE MEDIDA */
 function toggleConfigPanel() {
   const p = document.getElementById('configPanel');
   p.style.display = p.style.display === 'none' ? 'block' : 'none';
@@ -463,15 +461,8 @@ function toggleConfigPanel() {
 
 function renderConfigGrid() {
   const grid = document.getElementById('configGrid');
-  if (!S.products.length && Object.keys(MEDIDAS_DB).length === 4) {
-    grid.innerHTML = '<div style="padding:10px; color:var(--muted); font-size:12px;">Nenhum produto carregado para configurar. Faça o upload de dados primeiro.</div>';
-    return;
-  }
-  
-  // Consolida chaves do banco padrão com chaves dos itens ativos atuais
   let chaves = new Set([...Object.keys(MEDIDAS_DB), ...S.products.map(p => p.name.toUpperCase())]);
-  
-  grid.innerHTML = Array.from(chaves).sort().map(key => {
+  grid.innerHTML = Array.from(chaves).filter(k => !isIgnorado(k)).sort().map(key => {
     const item = MEDIDAS_DB[key] || { uni: 'un', fator: 1.0 };
     return `
       <div class="config-item">
@@ -482,10 +473,9 @@ function renderConfigGrid() {
             <option value="kg" ${item.uni==='kg'?'selected':''}>kg</option>
             <option value="L" ${item.uni==='L'?'selected':''}>L</option>
           </select>
-          <input type="number" step="0.001" min="0.001" value="${item.fator}" onchange="updateMedida('${key}', 'fator', this.value)" placeholder="Fator">
+          <input type="number" step="0.001" min="0.001" value="${item.fator}" onchange="updateMedida('${key}', 'fator', this.value)">
         </div>
-      </div>
-    `;
+      </div>`;
   }).join('');
 }
 
@@ -493,139 +483,71 @@ function updateMedida(key, field, value) {
   if (!MEDIDAS_DB[key]) MEDIDAS_DB[key] = { uni: 'un', fator: 1.0 };
   if (field === 'uni') MEDIDAS_DB[key].uni = value;
   if (field === 'fator') MEDIDAS_DB[key].fator = Math.max(0.001, parseFloat(value) || 1.0);
-  save();
-  renderDashboard();
-}
-
-function smartDetectDateIndex(filename, contentText) {
-  const fileDateMatch = filename.match(/(\d{2})[\/_](\d{2})/);
-  if (fileDateMatch) {
-    const formatted = fileDateMatch[1] + '/' + fileDateMatch[2];
-    const idx = S.weekDates.indexOf(formatted);
-    if (idx >= 0 && idx < 6) return idx;
-  }
-  const contentDateMatch = contentText.match(/(\d{2})\/(\d{2})/g);
-  if (contentDateMatch) {
-    for (let m of contentDateMatch) {
-      const idx = S.weekDates.indexOf(m);
-      if (idx >= 0 && idx < 6) return idx;
-    }
-  }
-  return 5;
+  save(); renderDashboard();
 }
 
 function openDateModal(label, rows, initialIdx) {
-  pendingImport = { label, rows, selectedIdx: initialIdx };
+  pendingImport = { label, rows: rows.filter(r => !isIgnorado(r.Produto)), selectedIdx: initialIdx };
   document.getElementById('modalFilename').textContent = label;
-  
   const grid = document.getElementById('modalSelectGrid');
   grid.innerHTML = [0,1,2,3,4,5].map(i => `
     <div class="modal-opt ${i === initialIdx ? 'selected' : ''}" onclick="selectModalDay(${i})" id="opt-day-${i}">
       <div class="opt-day">${DSHORT[i]}</div>
       <div class="opt-date">${S.weekDates[i] || '—'}</div>
-    </div>
-  `).join('');
-  
+    </div>`).join('');
   document.getElementById('dateModal').classList.add('active');
 }
-
 function selectModalDay(idx) {
-  if (!pendingImport) return;
-  pendingImport.selectedIdx = idx;
-  [0,1,2,3,4,5].forEach(i => {
-    document.getElementById(`opt-day-${i}`).classList.remove('selected');
-  });
+  if (!pendingImport) return; pendingImport.selectedIdx = idx;
+  [0,1,2,3,4,5].forEach(i => document.getElementById(`opt-day-${i}`).classList.remove('selected'));
   document.getElementById(`opt-day-${idx}`).classList.add('selected');
 }
-
-function closeDateModal() {
-  pendingImport = null;
-  document.getElementById('dateModal').classList.remove('active');
-}
-
+function closeDateModal() { pendingImport = null; document.getElementById('dateModal').classList.remove('active'); }
 function confirmDateModal() {
   if (!pendingImport) return;
-  S.externals.push({
-    id: Date.now() + '_' + Math.random().toString(36).slice(2,6),
-    label: pendingImport.label.length > 22 ? pendingImport.label.slice(0,20)+'…' : pendingImport.label,
-    targetIdx: pendingImport.selectedIdx,
-    rows: pendingImport.rows
-  });
-  save(); renderChips(); renderDashboard();
-  closeDateModal();
+  S.externals.push({ id: Date.now()+'_'+Math.random().toString(36).slice(2,6), label: pendingImport.label.slice(0,20), targetIdx: pendingImport.selectedIdx, rows: pendingImport.rows });
+  save(); renderChips(); renderDashboard(); closeDateModal();
 }
 
 function handleExtFiles(input) {
   const files = [...input.files]; if (!files.length) return;
-  
   files.forEach(file => {
     const reader = new FileReader();
     reader.onload = e => {
       const rows = parseUniversal(e.target.result);
-      if (!rows.length) { alert(`Não foi possível extrair dados válidos de ${file.name}`); return; }
-      const detectedIdx = smartDetectDateIndex(file.name, e.target.result);
-      openDateModal(file.name, rows, detectedIdx);
+      if (rows.length) openDateModal(file.name, rows, 5);
     };
     reader.readAsText(file, 'UTF-8');
   });
   input.value = '';
 }
-
-const dz = document.getElementById('dropZone');
-if (dz) {
-  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag'); });
-  dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
-  dz.addEventListener('drop', e => {
-    e.preventDefault(); dz.classList.remove('drag');
-    const files = [...e.dataTransfer.files].filter(f => /\.(csv|txt|tsv)$/i.test(f.name));
-    if (!files.length) { alert('Apenas arquivos .csv, .txt ou .tsv'); return; }
-    handleExtFiles({ files });
-  });
-}
-
 function processPaste() {
   const text = document.getElementById('pasteInput').value;
-  const result = document.getElementById('pasteResult');
-  if (!text.trim()) { alert('Cole os dados antes de processar.'); return; }
+  if (!text.trim()) return;
   const rows = parseUniversal(text);
-  if (!rows.length) {
-    result.textContent = '❌ Não foi possível extrair dados.';
-    result.className = 'parse-result err'; result.style.display='block'; return;
-  }
-  const detectedIdx = smartDetectDateIndex('Texto Colado', text);
-  document.getElementById('pasteInput').value = '';
-  openDateModal('Texto Colado', rows, detectedIdx);
+  if (rows.length) { document.getElementById('pasteInput').value = ''; openDateModal('Texto Colado', rows, 5); }
 }
-
 function removeExt(id) { S.externals = S.externals.filter(x => x.id !== id); save(); renderChips(); renderDashboard(); }
 function renderChips() {
   document.getElementById('chipRow').innerHTML = S.externals.map(x => `
-    <div class="chip">
-      <span>🏢 ${x.label}</span>
-      <span class="tag">${S.weekDates[x.targetIdx]||DSHORT[x.targetIdx]} · ${x.rows.length} itens</span>
-      <button onclick="removeExt('${x.id}')">✕</button>
-    </div>`).join('');
+    <div class="chip"><span>🏢 ${x.label}</span><span class="tag">${S.weekDates[x.targetIdx]||DSHORT[x.targetIdx]}</span><button onclick="removeExt('${x.id}')">✕</button></div>`).join('');
 }
 
 function renderCards() {
   const grid = document.getElementById('daysGrid'); grid.innerHTML = '';
   for (let i=0; i<6; i++) {
     const loaded = !!S.dayData[i], sat = i===5;
-    const qtd = loaded ? S.dayData[i].reduce((s,r)=>{ const n=_norm(r.Produto||''); return IGNORADOS.has(n)?s:s+(parseFloat(r.Qtd)||0); },0) : 0;
-    const card = document.createElement('div');
-    card.className = 'day-card'+(sat?' sat':'')+(loaded?' loaded':'');
+    const qtd = loaded ? S.dayData[i].reduce((s,r)=>isIgnorado(r.Produto)?s:s+(parseFloat(r.Qtd)||0),0) : 0;
+    const card = document.createElement('div'); card.className = 'day-card'+(sat?' sat':'')+(loaded?' loaded':'');
     card.innerHTML = `
       ${loaded?`<button class="dc-rm" onclick="removeDay(event,${i})">✕</button>`:''}
       <input type="file" accept=".csv,.txt,.tsv" onchange="loadDayFile(${i},this)" ${loaded?'style="display:none"':''}>
       <div class="dc-icon">${loaded?'✅':sat?'📦':'📂'}</div>
-      <div class="dc-name">${DSHORT[i]}${sat?' ×2':''}</div>
+      <div class="dc-name">${DSHORT[i]}</div>
       <div class="dc-date">${S.weekDates[i]||'—'}</div>
-      ${loaded ? `<div class="dc-q">${qtd.toLocaleString('pt-BR')} un</div><div class="dc-st ok">carregado</div>` : `<div class="dc-st ${sat?'sat':'idle'}">${sat?'Sáb + Dom':'Sem upload'}</div>`}`;
+      ${loaded ? `<div class="dc-q">${qtd} un</div>` : ''}`;
     grid.appendChild(card);
   }
-  const dom = document.createElement('div'); dom.className = 'day-card locked';
-  dom.innerHTML = `<div class="dc-icon">😴</div><div class="dc-name">Dom</div><div class="dc-date">${S.weekDates[6]||'—'}</div><div class="dc-st idle">Folga</div>`;
-  grid.appendChild(dom);
 }
 
 function loadDayFile(idx, input) {
@@ -633,76 +555,49 @@ function loadDayFile(idx, input) {
   const reader = new FileReader();
   reader.onload = e => {
     const rows = parseUniversal(e.target.result);
-    if (!rows.length) { alert('Falha ao processar arquivo diário.'); return; }
-    S.dayData[idx] = rows; save(); renderCards(); renderDashboard();
+    if (rows.length) { S.dayData[idx] = rows.filter(r => !isIgnorado(r.Produto)); save(); renderCards(); renderDashboard(); }
   };
   reader.readAsText(file, 'UTF-8');
 }
 function removeDay(evt, idx) { evt.stopPropagation(); S.dayData[idx] = null; save(); renderCards(); renderDashboard(); }
 
-function getTier(avg) { if (avg >= 20) return 'Alta demanda'; if (avg >= 10) return 'Demanda média'; if (avg >= 4) return 'Demanda baixa'; return 'Pontual'; }
-function pillClass(t) { return {'Alta demanda':'p-alta','Demanda média':'p-media','Demanda baixa':'p-baixa','Pontual':'p-pont'}[t]||'p-pont'; }
-function barColor(t) { return {'Alta demanda':'#2a78d6','Demanda média':'#1baf7a','Demanda baixa':'#eda100','Pontual':'#888780'}[t]||'#888780'; }
+function getTier(avg) { if (avg >= 20) return 'Alta demanda'; if (avg >= 10) return 'Demanda média'; return 'Pontual'; }
+function pillClass(t) { return {'Alta demanda':'p-alta','Demanda média':'p-media'}[t]||'p-pont'; }
+function barColor(t) { return {'Alta demanda':'#2a78d6','Demanda média':'#1baf7a'}[t]||'#888780'; }
 function cap(s) { return (s||'').toLowerCase().replace(/\b\w/g,c=>c.toUpperCase()); }
 
 function processData() {
   const { dayData, externals, margin } = S;
   const loadedIdx = dayData.map((d,i)=>d?i:null).filter(i=>i!==null);
-  S.loadedIdx = loadedIdx; S.nLoaded = loadedIdx.length;
   if (!loadedIdx.length && !externals.length) { S.products = []; return; }
   const map = {}, dayTotals = [0,0,0,0,0,0], mult = 1 + margin/100;
   
   loadedIdx.forEach(idx => {
     dayData[idx].forEach(r => {
-      const name = (r.Produto||r.produto||'').trim(); if (!name || isIgnorado(name)) return;
-      const q = parseFloat(r.Qtd||r.qtd||r.Quantidade||r.quantidade||0), key = name.toUpperCase();
+      const name = r.Produto.trim(), key = name.toUpperCase(); if(isIgnorado(name)) return;
       if (!map[key]) map[key] = { name, byDay:[0,0,0,0,0,0], extByDay:[0,0,0,0,0,0], totalQtd:0 };
-      map[key].byDay[idx] += q; map[key].totalQtd += q;
+      map[key].byDay[idx] += parseFloat(r.Qtd||0); map[key].totalQtd += parseFloat(r.Qtd||0);
     });
   });
   externals.forEach(ext => {
     ext.rows.forEach(r => {
-      const name = (r.Produto||r.produto||'').trim(); if (!name || isIgnorado(name)) return;
-      const q = parseFloat(r.Qtd||r.qtd||0), key = name.toUpperCase();
+      const name = r.Produto.trim(), key = name.toUpperCase(); if(isIgnorado(name)) return;
       if (!map[key]) map[key] = { name, byDay:[0,0,0,0,0,0], extByDay:[0,0,0,0,0,0], totalQtd:0 };
-      map[key].extByDay[ext.targetIdx] += q; map[key].totalQtd += q;
+      map[key].extByDay[ext.targetIdx] += parseFloat(r.Qtd||0); map[key].totalQtd += parseFloat(r.Qtd||0);
     });
   });
   
   S.products = Object.values(map).map(p => {
-    const key = p.name.toUpperCase();
-    const config = MEDIDAS_DB[key] || { uni: 'un', fator: 1.0 };
-    
-    const dp = Math.max(loadedIdx.filter(i => p.byDay[i]>0).length, 1);
-    const avgReal = p.totalQtd / dp;
-    
-    // Mantenha o cálculo base em porções vendidas (unidades)
-    const metaDayPorcoes = Math.ceil(avgReal * mult);
-    
-    // Aplica o fator de conversão de medida nos resultados finais
-    const metaDay = parseFloat((metaDayPorcoes * config.fator).toFixed(2));
-    const satMeta = parseFloat(((metaDayPorcoes * 2) * config.fator).toFixed(2));
-    
+    const key = p.name.toUpperCase(), config = MEDIDAS_DB[key] || { uni: 'un', fator: 1.0 };
+    const dp = Math.max(loadedIdx.filter(i => p.byDay[i]>0).length, 1), avgReal = p.totalQtd / dp;
+    const metaDayPorcoes = Math.ceil(avgReal * mult), metaDay = parseFloat((metaDayPorcoes * config.fator).toFixed(2));
     const allocDay = [0,0,0,0,0,0];
     for (let i=0; i<6; i++) {
-      const basePorcoes = S.dayData[i] ? Math.ceil(p.byDay[i] * mult) : (i===5 ? metaDayPorcoes*2 : metaDayPorcoes);
-      const totalPorcoesDia = basePorcoes + p.extByDay[i];
-      allocDay[i] = parseFloat((totalPorcoesDia * config.fator).toFixed(2));
-      dayTotals[i] += allocDay[i];
+      const base = S.dayData[i] ? Math.ceil(p.byDay[i] * mult) : (i===5 ? metaDayPorcoes*2 : metaDayPorcoes);
+      allocDay[i] = parseFloat(((base + p.extByDay[i]) * config.fator).toFixed(2)); dayTotals[i] += allocDay[i];
     }
-    
-    return { 
-      ...p, 
-      avgReal, 
-      metaDay, 
-      satMeta, 
-      projWeek: allocDay.reduce((a,b)=>a+b,0), 
-      allocDay, 
-      tier: getTier(avgReal),
-      uni: config.uni
-    };
+    return { ...p, avgReal, metaDay, satMeta:metaDay*2, projWeek: allocDay.reduce((a,b)=>a+b,0), allocDay, tier: getTier(avgReal), uni: config.uni };
   }).sort((a,b) => b.projWeek - a.projWeek);
-  
   S.dayTotals = dayTotals.map(v => parseFloat(v.toFixed(2)));
 }
 
@@ -710,59 +605,49 @@ function renderDashboard() {
   processData();
   if (!S.products.length) { document.getElementById('dashboard').style.display = 'none'; document.getElementById('emptyState').style.display = 'block'; return; }
   document.getElementById('dashboard').style.display = 'block'; document.getElementById('emptyState').style.display = 'none';
-  const { products, dayTotals, nLoaded, margin, weekDates } = S;
-  const tProj = products.reduce((s,p)=>s+p.projWeek,0), tSat = dayTotals[5], avgDay = S.products.reduce((s,p)=>s+p.metaDay,0);
-
+  const { products, dayTotals, weekDates } = S;
+  
   document.getElementById('kpiRow').innerHTML = `
-    <div class="kpi blue"><div class="kpi-l">Volume Total Estimado</div><div class="kpi-v">${tProj.toLocaleString('pt-BR', {maximumFractionDigits:1})}</div><div class="kpi-s">Unidades mistas (un/kg/L)</div></div>
-    <div class="kpi brew"><div class="kpi-l">Média Diária Produção</div><div class="kpi-v">${avgDay.toLocaleString('pt-BR', {maximumFractionDigits:1})}</div><div class="kpi-s">massa de volume/dia</div></div>
-    <div class="kpi green"><div class="kpi-l">Meta sábado (×2)</div><div class="kpi-v">${tSat.toLocaleString('pt-BR', {maximumFractionDigits:1})}</div><div class="kpi-s">cobre sáb + dom</div></div>
-    <div class="kpi"><div class="kpi-l">Produtos ativos</div><div class="kpi-v">${products.length}</div><div class="kpi-s">filtros aplicados</div></div>`;
+    <div class="kpi blue"><div class="kpi-l">Volume Estimado</div><div class="kpi-v">${products.reduce((s,p)=>s+p.projWeek,0).toFixed(1)}</div><div class="kpi-s">Unidades combinadas</div></div>
+    <div class="kpi brew"><div class="kpi-l">Média Diária</div><div class="kpi-v">${products.reduce((s,p)=>s+p.metaDay,0).toFixed(1)}</div><div class="kpi-s">por dia ativo</div></div>
+    <div class="kpi green"><div class="kpi-l">Meta Sábado (×2)</div><div class="kpi-v">${dayTotals[5].toFixed(1)}</div><div class="kpi-s">Cobre Sáb + Dom</div></div>
+    <div class="kpi"><div class="kpi-l">Produtos Ativos</div><div class="kpi-v">${products.length}</div><div class="kpi-s">excluindo bloqueados</div></div>`;
 
-  document.getElementById('disclaBox').innerHTML = `<strong>Aviso de Unidades:</strong> Agora os cálculos abaixo multiplicam as vendas pelo fator cadastrado no painel de configurações para exibir KG, Litros ou Unidades reais de lote.`;
+  document.getElementById('disclaBox').innerHTML = `<strong>Filtro de Produção Central Ativo:</strong> Todos os itens de montagem em loja e revenda direta foram higienizados das tabelas.`;
 
   document.getElementById('bkRow').innerHTML = [0,1,2,3,4,5,6].map(i => {
-    if (i===6) return `<div class="bk dom"><div class="bk-day">Dom</div><div class="bk-date">${weekDates[6]||'—'}</div><div class="bk-val" style="font-size:18px">😴</div><div class="bk-sub">folga</div></div>`;
-    const has = !!S.dayData[i], val = dayTotals[i]||0;
-    return `<div class="bk${i===5?' sat':''}">
-      <div class="bk-day">${DSHORT[i]}${i===5?' ×2':''}</div><div class="bk-date">${weekDates[i]||'—'}</div>
-      <div class="bk-val${has?'':' proj'}">${val.toLocaleString('pt-BR', {maximumFractionDigits:1})}</div>
-    </div>`;
+    if (i===6) return `<div class="bk dom"><div class="bk-day">Dom</div><div class="bk-val">😴</div></div>`;
+    return `<div class="bk ${i===5?'sat':''}"><div class="bk-day">${DSHORT[i]}</div><div class="bk-val">${(dayTotals[i]||0).toFixed(1)}</div></div>`;
   }).join('');
-
-  const crits = products.filter(p => p.projWeek > 150 || (p.uni === 'kg' && p.metaDay > 15));
-  document.getElementById('critPanel').style.display = crits.length ? 'block' : 'none';
-  if (crits.length) document.getElementById('critList').innerHTML = crits.map(p=>`<div class="crit-item">🔥 ${cap(p.name)} — ${p.metaDay} ${p.uni}/dia</div>`).join('');
 
   renderViewTabs(); renderTable(); renderChart();
 }
 
 function renderViewTabs() {
-  const tabs = [{ id:'geral', label:'📋 Visão Geral', cls:'act' }, ...DSHORT.slice(0,6).map((s,i) => ({ id:String(i), label:`🗓 ${s}${i===5?' (×2)':''}`, cls:'act-day' }))];
+  const tabs = [{ id:'geral', label:'📋 Geral', cls:'act' }, ...DSHORT.slice(0,6).map((s,i) => ({ id:String(i), label:`🗓 ${s}`, cls:'act-day' }))];
   document.getElementById('viewTabs').innerHTML = tabs.map(t => `<button class="vt ${S.view===t.id ? t.cls : ''}" onclick="switchView('${t.id}')">${t.label}</button>`).join('');
 }
-function switchView(v) { S.view = v; document.getElementById('chartCard').style.display = v==='geral' ? 'block' : 'none'; renderViewTabs(); renderTable(); }
+function switchView(v) { S.view = v; renderViewTabs(); renderTable(); }
 
 function renderTable() {
-  const { products, view } = S; const thead = document.getElementById('thead'), tbody = document.getElementById('tbody'), maxP = products[0]?.projWeek || 1;
+  const { products, view } = S; const thead = document.getElementById('thead'), tbody = document.getElementById('tbody');
   if (view === 'geral') {
-    thead.innerHTML = `<tr><th>#</th><th>Produto</th><th>U.M.</th><th>Perfil</th><th class="r">Venda (un)</th><th class="r de-dia">Meta diária</th><th class="r col-proj">Projeção semana</th><th class="r col-sat">Sábado (×2)</th><th></th></tr>`;
-    tbody.innerHTML = products.map((p,i) => `<tr><td>${i+1}</td><td style="font-weight:500">${cap(p.name)}</td><td><strong style="color:var(--brew)">${p.uni}</strong></td><td><span class="pill ${pillClass(p.tier)}">${p.tier}</span></td><td class="r">${p.totalQtd}</td><td class="r"><span class="vday">${p.metaDay.toLocaleString('pt-BR')}</span></td><td class="r"><span class="vproj">${p.projWeek.toLocaleString('pt-BR')}</span></td><td class="r"><span class="vsat">${p.satMeta.toLocaleString('pt-BR')}</span></td><td><div class="bar-mini"><div class="bar-f" style="width:${Math.round((p.projWeek/maxP)*100)}%;background:${barColor(p.tier)}"></div></div></td></tr>`).join('');
+    thead.innerHTML = `<tr><th>Produto</th><th>U.M.</th><th>Perfil</th><th class="r">Total Vendas</th><th class="r">Meta Diária</th><th class="r col-proj">Proj. Semana</th><th class="r col-sat">Sábado (×2)</th></tr>`;
+    tbody.innerHTML = products.map(p => `<tr><td style="font-weight:600">${cap(p.name)}</td><td><strong style="color:var(--brew)">${p.uni}</strong></td><td><span class="pill ${pillClass(p.tier)}">${p.tier}</span></td><td class="r">${p.totalQtd}</td><td class="r">${p.metaDay}</td><td class="r" style="font-weight:bold">${p.projWeek.toFixed(1)}</td><td class="r">${p.satMeta.toFixed(1)}</td></tr>`).join('');
   } else {
     const di = parseInt(view);
-    thead.innerHTML = `<tr><th>#</th><th>Produto</th><th>U.M.</th><th>Perfil</th><th class="r">Venda Base (un)</th><th class="r col-ext">Externo</th><th class="r col-proj">👉 PRODUZIR HOJE</th></tr>`;
-    const rows = products.filter(p => p.allocDay[di] > 0);
-    tbody.innerHTML = rows.map((p,i) => `<tr><td>${i+1}</td><td style="font-weight:700">${cap(p.name)}</td><td><strong style="color:var(--brew)">${p.uni}</strong></td><td><span class="pill ${pillClass(p.tier)}">${p.tier}</span></td><td class="r">${S.dayData[di]?p.byDay[di]:'—'}</td><td class="r"><span class="vext">${p.extByDay[di]>0?p.extByDay[di]:'—'}</span></td><td class="r" style="background:var(--foam)"><span class="vproj">${p.allocDay[di].toLocaleString('pt-BR')} ${p.uni}</span></td></tr>`).join('');
+    thead.innerHTML = `<tr><th>Produto</th><th>U.M.</th><th>Perfil</th><th class="r">Base Dia (un)</th><th class="r col-ext">Ext.</th><th class="r col-proj">👉 PRODUÇÃO HOJE</th></tr>`;
+    tbody.innerHTML = products.filter(p => p.allocDay[di] > 0).map(p => `<tr><td style="font-weight:700">${cap(p.name)}</td><td><strong style="color:var(--brew)">${p.uni}</strong></td><td><span class="pill ${pillClass(p.tier)}">${p.tier}</span></td><td class="r">${S.dayData[di]?p.byDay[di]:'—'}</td><td class="r">${p.extByDay[di]||'—'}</td><td class="r" style="background:var(--foam); font-weight:bold; color:var(--alta-c)">${p.allocDay[di]} ${p.uni}</td></tr>`).join('');
   }
 }
 
 function renderChart() {
   const top15 = S.products.slice(0,15); if (CHARTS.top) CHARTS.top.destroy();
   const ctx = document.getElementById('chartTop');
-  if (ctx) {
+  if (ctx && top15.length) {
     CHARTS.top = new Chart(ctx, {
-      type: 'bar', data: { labels: top15.map(p => cap(p.name).slice(0,14)), datasets: [{ data:top15.map(p=>p.projWeek), backgroundColor:top15.map(p=>barColor(p.tier)) }] },
-      options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{grid:{display:false}},y:{grid:{color:'#E2DDD4'}}} }
+      type: 'bar', data: { labels: top15.map(p => cap(p.name).slice(0,12)), datasets: [{ data:top15.map(p=>p.projWeek), backgroundColor:top15.map(p=>barColor(p.tier)) }] },
+      options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}} }
     });
   }
 }
@@ -770,13 +655,9 @@ function renderChart() {
 function exportCSV() { _dlCSV(S.products.map(p=>[cap(p.name),p.uni,p.metaDay,p.projWeek]), 'producao.csv'); }
 function exportRomaneio() { _dlCSV(S.products.map(p=>[cap(p.name),p.uni,p.metaDay,p.satMeta]), 'romaneio.csv'); }
 function _dlCSV(rows,name) { const csv=rows.map(r=>r.map(c=>'"'+String(c)+'"').join(',')).join('\n'); const blob=new Blob(['\uFEFF'+csv],{type:'text/csv'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=name; a.click(); }
-
 function resetAll() { localStorage.removeItem('bw_v3_state'); localStorage.removeItem('bw_medidas_db'); location.reload(); }
 
-/* INITIALIZATION */
-renderCards();
-setThisWeek();
-loadSaved();
+renderCards(); setThisWeek(); loadSaved();
 </script>
 </body>
 </html>
