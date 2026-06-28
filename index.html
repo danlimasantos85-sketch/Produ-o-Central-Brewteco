@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Brewteco — Planejamento Semanal de Production</title>
+<title>Brewteco — Planejamento Semanal de Produção</title>
 <meta name="description" content="Dashboard de planejamento semanal da cozinha central Brewteco.">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
@@ -23,12 +23,12 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--surface2);color:v
 button,input,textarea,select{font-family:inherit;cursor:pointer}
 textarea{cursor:text}
 
-/* TOPBAR COM PADRÃO DE AZULEJOS REPETIDOS */
+/* TOPBAR COM PADRÃO DE AZULEJOS REPETIDOS CORRIGIDO */
 .topbar{
-  background-color: var(--navy); /* Cor de fundo caso a imagem falhe */
-  background-image: url("Gemini_Generated_Image_5fshqt5fshqt5fsh.png");
+  background-color: var(--navy);
+  background-image: url("azulejo brewteco.jpg"); /* Nome novo e extensão .jpg */
   background-repeat: repeat;
-  background-size: 56px 56px; /* Mantém a proporção exata do azulejo quadrado */
+  background-size: 56px 56px; 
   height: 56px;
   display: flex;
   align-items: center;
@@ -40,9 +40,7 @@ textarea{cursor:text}
   box-shadow: 0 2px 8px rgba(0,0,0,.15);
 }
 .brand{display:flex;align-items:center;gap:12px;color:var(--navy)}
-/* Ajuste do tamanho do container do logo */
-.brand picture, .brand img{height:32px;width:auto;display:flex;align-items:center}
-.brand-logo{height:32px;width:auto;object-fit:contain}
+.brand img{height:32px;width:auto;display:flex;align-items:center;object-fit:contain}
 .brand .sep{color:rgba(13,33,55,.4);font-size:14px;font-weight:bold;text-shadow:0 1px 1px rgba(255,255,255,0.6)}
 .brand .sub{font-weight:700;color:var(--navy);font-size:13px;text-shadow:0 1px 1px rgba(255,255,255,0.8)}
 .topbar-right{display:flex;align-items:center;gap:8px}
@@ -206,12 +204,9 @@ tfoot td.r{text-align:right}
 <body>
 
 <nav class="topbar">
-  <!-- CARREGAMENTO INTELIGENTE DO LOGO (TESTA .PNG E DEPOIS .JPG AUTOMATICAMENTE) -->
   <div class="brand">
-    <picture>
-      <source srcset="Logo Brewteco.png" type="image/png">
-      <img src="Logo Brewteco.jpg" alt="Brewteco" class="brand-logo">
-    </picture>
+    <!-- Ajustado para puxar o logo em JPG direto -->
+    <img src="Logo Brewteco.jpg" alt="Brewteco" class="brand-logo">
     <span class="sep">|</span>
     <span class="sub">Planejamento Semanal de Produção</span>
   </div>
