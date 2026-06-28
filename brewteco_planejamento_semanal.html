@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brewteco — Planejamento Semanal de Produção</title>
+<meta name="description" content="Dashboard de planejamento semanal da cozinha central Brewteco.">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{
+  --navy:#0D2137;--navy-lt:#1A3A5C;--brew:#C8860A;--brew-lt:#F5A623;
+  --foam:#FDF6E3;--ink:#1A1A1A;--muted:#6B6860;--border:#E2DDD4;--border-md:#C8C3BA;
+  --surface:#FFFFFF;--surface2:#F9F6F0;--surface3:#F3EFE8;
+  --alta-c:#1565C0;--alta-bg:#EBF3FD;--alta-bdr:#93C5FD;
+  --media-c:#166534;--media-bg:#DCFCE7;--media-bdr:#86EFAC;
+  --baixa-c:#854D0E;--baixa-bg:#FEF9C3;--baixa-bdr:#FDE047;
+  --pont-c:#374151;--pont-bg:#F3F4F6;--pont-bdr:#D1D5DB;
+  --promo-c:#9D174D;--promo-bg:#FCE7F3;--promo-bdr:#F9A8D4;
+  --radius:8px;--radius-lg:12px;
+  --shadow-sm:0 1px 3px rgba(0,0,0,.08);--shadow-md:0 2px 8px rgba(0,0,0,.10);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--surface2);color:var(--ink);font-size:14px;line-height:1.5;min-height:100vh}
+button{cursor:pointer;font-family:inherit}
+input{font-family:inherit}
+
+/* TOPBAR */
+.topbar{background:var(--navy);height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 1.5rem;position:sticky;top:0;z-index:200;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.topbar-brand{display:flex;align-items:center;gap:8px;color:#fff;font-size:14px;font-weight:700;letter-spacing:.01em}
+.topbar-brand .sep{color:rgba(255,255,255,.3)}
+.topbar-brand .sub{font-weight:400;color:rgba(255,255,255,.6);font-size:13px}
+.topbar-right{display:flex;align-items:center;gap:8px}
+.brew-badge{background:rgba(200,134,10,.22);color:var(--brew-lt);font-size:11px;font-weight:600;padding:3px 10px;border-radius:99px;letter-spacing:.04em}
+.btn-topbar{background:rgba(255,255,255,.1);border:0.5px solid rgba(255,255,255,.2);color:rgba(255,255,255,.8);font-size:11px;font-weight:500;padding:4px 12px;border-radius:6px;transition:background .15s}
+.btn-topbar:hover{background:rgba(255,255,255,.18)}
+
+/* LAYOUT */
+.page{max-width:1060px;margin:0 auto;padding:1.5rem}
+.sec-label{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.6rem}
+
+/* SETUP PANEL */
+.setup-panel{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:1.1rem 1.25rem;margin-bottom:1.25rem;box-shadow:var(--shadow-sm)}
+.setup-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:.75rem}
+.setup-row:last-child{margin-bottom:0}
+.setup-label{font-size:12px;color:var(--muted);font-weight:500;white-space:nowrap}
+input[type=date]{border:0.5px solid var(--border-md);border-radius:6px;padding:5px 10px;font-size:12px;color:var(--ink);background:var(--surface);outline:none}
+input[type=date]:focus{border-color:var(--brew)}
+.btn{border:none;border-radius:6px;font-size:12px;font-weight:600;padding:5px 14px;transition:opacity .15s}
+.btn:hover{opacity:.86}
+.btn-brew{background:var(--brew);color:#fff}
+.btn-ghost{background:var(--border);color:var(--ink)}
+.btn-blue{background:var(--alta-c);color:#fff}
+.margin-val-display{font-size:14px;font-weight:700;color:var(--brew);min-width:38px;text-align:center}
+input[type=range]{width:130px;accent-color:var(--brew)}
+.margin-info{font-size:11px;color:var(--muted);line-height:1.5}
+
+/* DAY CARDS */
+.days-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:1.25rem}
+.day-card{background:var(--surface);border:1.5px dashed var(--border-md);border-radius:var(--radius-lg);padding:.75rem .6rem;text-align:center;cursor:pointer;position:relative;transition:border-color .15s,background .15s;min-height:122px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
+.day-card:not(.locked):hover{border-color:var(--brew);background:var(--foam)}
+.day-card input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.day-card.loaded{border-style:solid;border-color:var(--media-bdr);background:var(--media-bg)}
+.day-card.saturday{border-color:var(--alta-bdr);background:var(--alta-bg)}
+.day-card.saturday.loaded{border-style:solid;border-color:var(--alta-c);background:#DBEAFE}
+.day-card.locked{background:var(--surface3);border-style:solid;border-color:var(--border);cursor:default;opacity:.6}
+.day-card.locked input{pointer-events:none}
+.dc-name{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.dc-date{font-size:11px;color:var(--muted);margin-bottom:2px}
+.dc-icon{font-size:1.6rem;line-height:1}
+.dc-status{font-size:10px;font-weight:600;margin-top:2px}
+.dc-status.ok{color:var(--media-c)}
+.dc-status.idle{color:var(--muted)}
+.dc-status.sat{color:var(--alta-c)}
+.dc-qtd{font-size:12px;font-weight:700;color:var(--alta-c)}
+.dc-remove{position:absolute;top:5px;right:6px;background:rgba(0,0,0,.1);border:none;border-radius:50%;width:18px;height:18px;font-size:10px;line-height:18px;text-align:center;color:var(--muted);display:none;padding:0}
+.day-card.loaded .dc-remove{display:block}
+.dc-remove:hover{background:rgba(200,0,0,.18);color:#c00}
+
+/* KPI */
+.kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:1.25rem}
+.kpi{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:.85rem 1rem;box-shadow:var(--shadow-sm)}
+.kpi-lbl{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.kpi-val{font-size:22px;font-weight:700;color:var(--navy);line-height:1.2;margin:3px 0}
+.kpi-sub{font-size:11px;color:var(--muted)}
+.kpi.brew .kpi-val{color:var(--brew)}
+.kpi.blue .kpi-val{color:var(--alta-c)}
+.kpi.green .kpi-val{color:var(--media-c)}
+
+/* DISCLAIMER */
+.disclaimer{background:var(--foam);border:0.5px solid #E2C97A;border-left:4px solid var(--brew);border-radius:0 var(--radius) var(--radius) 0;padding:.7rem 1rem;font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:1.25rem}
+.disclaimer strong{color:var(--navy)}
+
+/* BREAKDOWN */
+.breakdown-row{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:1.25rem}
+.bd-cell{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:.5rem .6rem;text-align:center;box-shadow:var(--shadow-sm)}
+.bd-cell.sat{border-color:var(--alta-bdr);background:var(--alta-bg)}
+.bd-cell.dom{opacity:.5}
+.bd-day{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.bd-date{font-size:10px;color:var(--muted);margin:1px 0}
+.bd-val{font-size:16px;font-weight:700;color:var(--navy);margin:3px 0}
+.bd-val.proj{color:var(--muted);font-size:13px;font-weight:500;font-style:italic}
+.bd-proj-lbl{font-size:10px;color:var(--brew);font-weight:600}
+.bd-tag{font-size:10px;color:var(--alta-c);font-weight:600}
+
+/* CHARTS */
+.chart-row{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:1.25rem}
+.chart-card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.25rem;box-shadow:var(--shadow-sm)}
+.chart-card h3{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.75rem}
+.legend-row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:.5rem}
+.leg-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)}
+.leg-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+
+/* TABS */
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:.75rem}
+.tab{font-size:11px;font-weight:600;padding:4px 12px;border-radius:99px;border:1.5px solid var(--border-md);background:var(--surface);color:var(--muted);transition:all .12s}
+.tab:hover{border-color:var(--navy);color:var(--navy)}
+.tab.act-all{background:var(--navy);color:#fff;border-color:var(--navy)}
+.tab.act-alta{background:var(--alta-bg);color:var(--alta-c);border-color:var(--alta-c)}
+.tab.act-media{background:var(--media-bg);color:var(--media-c);border-color:var(--media-c)}
+.tab.act-baixa{background:var(--baixa-bg);color:var(--baixa-c);border-color:var(--baixa-c)}
+.tab.act-pont{background:var(--pont-bg);color:var(--pont-c);border-color:var(--pont-bdr)}
+.tab.act-promo{background:var(--promo-bg);color:var(--promo-c);border-color:var(--promo-c)}
+
+/* TABLE */
+.table-wrap{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);overflow:hidden;margin-bottom:1.25rem}
+table{width:100%;border-collapse:collapse}
+thead th{background:var(--navy);color:#fff;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:9px 10px;text-align:left;white-space:nowrap}
+thead th.r{text-align:right}
+thead th.col-proj{background:var(--alta-c)}
+thead th.col-sat{background:#185FA5}
+thead th.col-day{background:var(--media-c)}
+tbody tr{border-bottom:0.5px solid var(--border);transition:background .1s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--foam)}
+tbody td{padding:8px 10px;color:var(--ink);font-size:12px}
+tbody td.r{text-align:right;font-variant-numeric:tabular-nums}
+.pill{font-size:10px;font-weight:600;padding:2px 7px;border-radius:99px;white-space:nowrap}
+.p-alta{background:var(--alta-bg);color:var(--alta-c)}
+.p-media{background:var(--media-bg);color:var(--media-c)}
+.p-baixa{background:var(--baixa-bg);color:var(--baixa-c)}
+.p-pont{background:var(--pont-bg);color:var(--pont-c)}
+.p-promo{background:var(--promo-bg);color:var(--promo-c)}
+.val-real{font-size:12px;color:var(--muted)}
+.val-day{font-size:13px;font-weight:700;color:var(--media-c)}
+.val-proj{font-size:13px;font-weight:700;color:var(--alta-c)}
+.val-sat{font-size:13px;font-weight:700;color:#185FA5}
+.bar-mini{width:64px;height:4px;background:var(--border);border-radius:2px;display:inline-block;vertical-align:middle}
+.bar-fill{height:4px;border-radius:2px}
+tfoot td{background:var(--navy);color:#fff;font-size:12px;font-weight:700;padding:9px 10px}
+tfoot td.r{text-align:right}
+
+/* PANELS */
+.panel{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.25rem;box-shadow:var(--shadow-sm);margin-bottom:1.25rem}
+.panel-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem}
+.hist-item{display:flex;align-items:center;gap:10px;padding:7px 10px;background:var(--surface2);border-radius:6px;font-size:12px;margin-bottom:5px}
+.hist-dot{width:8px;height:8px;border-radius:50%;background:var(--brew);flex-shrink:0}
+.hist-week{font-weight:700;color:var(--navy);white-space:nowrap}
+.hist-meta{color:var(--muted);flex:1}
+.hist-stat{font-size:11px;font-weight:600;color:var(--media-c);white-space:nowrap}
+
+/* EMPTY */
+.empty-state{text-align:center;padding:3.5rem 2rem;color:var(--muted)}
+.empty-state .big{font-size:3rem;margin-bottom:.75rem}
+.empty-state p{font-size:13px;max-width:380px;margin:0 auto;line-height:1.7}
+
+/* RESPONSIVE */
+@media(max-width:780px){
+  .days-grid{grid-template-columns:repeat(4,1fr)}
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+  .chart-row{grid-template-columns:1fr}
+  .breakdown-row{grid-template-columns:repeat(4,1fr)}
+  thead th:nth-child(n+8){display:none}
+  tbody td:nth-child(n+8){display:none}
+  tfoot td:nth-child(n+8){display:none}
+}
+
+/* PRINT */
+@media print{
+  .topbar,.setup-panel,.days-grid,.tabs,.chart-row,.panel,.btn,button{display:none!important}
+  .page{padding:0;max-width:100%}
+  body{background:#fff;font-size:11px}
+  .kpi-grid{grid-template-columns:repeat(5,1fr);gap:6px}
+  .kpi{border:1px solid #ccc;padding:.5rem}
+  .table-wrap{box-shadow:none;border:1px solid #ccc}
+  thead th{background:var(--navy)!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .breakdown-row{grid-template-columns:repeat(7,1fr)}
+}
+</style>
+</head>
+<body>
+
+<nav class="topbar" role="banner">
+  <div class="topbar-brand">
+    🍺 Brewteco <span class="sep">|</span>
+    <span class="sub">Planejamento Semanal de Produção</span>
+  </div>
+  <div class="topbar-right">
+    <span class="brew-badge" id="weekBadge">sem dados</span>
+    <button class="btn-topbar" onclick="exportCSV()">⬇ CSV Completo</button>
+    <button class="btn-topbar" onclick="exportRomaneio()">⬇ Romaneio</button>
+    <button class="btn-topbar" onclick="window.print()">🖨 Imprimir</button>
+    <button class="btn-topbar" onclick="resetAll()">✕ Limpar</button>
+  </div>
+</nav>
+
+<div class="page">
+
+  <!-- SETUP -->
+  <div class="setup-panel">
+    <div class="setup-row">
+      <span class="setup-label">Semana de referência:</span>
+      <input type="date" id="weekStart" title="Selecione qualquer dia da semana">
+      <button class="btn btn-brew" onclick="setWeek()">Definir semana</button>
+      <button class="btn btn-ghost" onclick="setThisWeek()">Esta semana</button>
+      <span style="font-size:11px;color:var(--muted)">A semana sempre inicia na segunda-feira.</span>
+    </div>
+    <div class="setup-row">
+      <span class="setup-label">Margem de segurança:</span>
+      <input type="range" min="0" max="80" value="30" step="5" id="marginSlider" oninput="onMarginChange(this.value)">
+      <span class="margin-val-display" id="marginDisp">+30%</span>
+      <span class="margin-info">
+        Aplicada sobre a média dos dias com dados reais.<br>
+        Dias futuros = média × (1 + margem). Sábado = meta diária × 2 (cobre domingo).
+      </span>
+    </div>
+  </div>
+
+  <!-- DAY CARDS -->
+  <div class="sec-label">Upload por dia — arraste o CSV ou clique</div>
+  <div class="days-grid" id="daysGrid"></div>
+
+  <!-- DASHBOARD -->
+  <div id="dashboard" style="display:none">
+    <div class="kpi-grid" id="kpiGrid"></div>
+    <div class="disclaimer" id="disclaimerBox"></div>
+
+    <div class="sec-label">Volume por dia da semana</div>
+    <div class="breakdown-row" id="breakdownRow"></div>
+
+    <div class="chart-row">
+      <div class="chart-card">
+        <div class="legend-row">
+          <span class="leg-item"><span class="leg-dot" style="background:#C8C3BA"></span>Real acumulado</span>
+          <span class="leg-item"><span class="leg-dot" style="background:#2a78d6"></span>Projeção + margem</span>
+        </div>
+        <h3>Top 15 — projeção semanal com margem</h3>
+        <div style="position:relative;height:260px">
+          <canvas id="chartTop" role="img" aria-label="Top 15 produtos por projeção semanal">Top 15 produtos projetados para a semana.</canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <h3>Distribuição por perfil de demanda</h3>
+        <div style="position:relative;height:200px">
+          <canvas id="chartTier" role="img" aria-label="Distribuição por perfil de demanda">Distribuição por perfil.</canvas>
+        </div>
+        <div id="tierLegend" style="margin-top:.5rem"></div>
+      </div>
+    </div>
+
+    <div class="sec-label">Planejamento completo por produto</div>
+    <div class="tabs" id="tierTabs"></div>
+    <div class="table-wrap">
+      <table id="mainTable">
+        <thead>
+          <tr>
+            <th>#</th><th>Produto</th><th>Perfil</th>
+            <th class="r">Real acum.</th>
+            <th class="r">Dias</th>
+            <th class="r">Média/dia</th>
+            <th class="r col-day">Meta diária</th>
+            <th class="r col-proj" id="thProj">Projeção semana (+30%)</th>
+            <th class="r col-sat">Meta sábado (×2)</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="prodBody"></tbody>
+        <tfoot><tr id="totRow"></tr></tfoot>
+      </table>
+    </div>
+
+    <!-- EXPORT PANEL -->
+    <div class="panel">
+      <div class="panel-hdr">
+        <span class="sec-label" style="margin:0">Exportar &amp; Imprimir</span>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:.6rem">
+        <button class="btn btn-brew" onclick="exportCSV()">⬇ CSV Completo</button>
+        <button class="btn btn-blue" onclick="exportRomaneio()">⬇ CSV Romaneio (só metas)</button>
+        <button class="btn btn-ghost" onclick="window.print()">🖨 Imprimir romaneio</button>
+      </div>
+      <p style="font-size:11px;color:var(--muted)">
+        <strong>CSV Completo</strong> — todas as colunas (real, dias, média, metas, projeção).<br>
+        <strong>Romaneio</strong> — versão enxuta: Produto | Perfil | Meta Diária | Meta Sábado | Projeção Semana.
+      </p>
+    </div>
+  </div>
+
+  <!-- EMPTY STATE -->
+  <div class="empty-state" id="emptyState">
+    <div class="big">🍺</div>
+    <p>Defina a semana e faça upload do CSV de cada dia.<br>Você pode carregar de 1 a 6 dias — a projeção se ajusta automaticamente conforme os dados chegam.</p>
+  </div>
+
+  <!-- HISTORY -->
+  <div class="panel" id="historyPanel" style="display:none">
+    <div class="panel-hdr">
+      <span class="sec-label" style="margin:0">Histórico de semanas registradas</span>
+      <button class="btn btn-ghost" style="font-size:11px;padding:3px 10px" onclick="clearHistory()">Limpar histórico</button>
+    </div>
+    <div id="histList"></div>
+  </div>
+
+</div>
+
+<script>
+const DAY_NAMES = ['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo'];
+const DAY_SHORT = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+
+let S = {
+  weekDates:    ['','','','','','',''],
+  dayData:      [null,null,null,null,null,null],
+  margin:       30,
+  activeFilter: 'todos',
+  products:     [],
+  dayTotals:    [0,0,0,0,0,0],
+  nLoaded:      0,
+  loadedIdx:    [],
+  history:      JSON.parse(localStorage.getItem('bw_hist2') || '[]'),
+};
+let CHARTS = { top: null, tier: null };
+
+/* ── WEEK ── */
+function setThisWeek(){
+  const now = new Date();
+  document.getElementById('weekStart').value = now.toISOString().slice(0,10);
+  setWeek();
+}
+function setWeek(){
+  const v = document.getElementById('weekStart').value;
+  if(!v){ alert('Selecione uma data.'); return; }
+  const base = new Date(v+'T12:00:00');
+  const dow = base.getDay();
+  const diff = dow===0 ? -6 : 1-dow;
+  const mon = new Date(base);
+  mon.setDate(base.getDate()+diff);
+  for(let i=0;i<7;i++){
+    const d=new Date(mon); d.setDate(mon.getDate()+i);
+    S.weekDates[i]=d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+  }
+  document.getElementById('weekBadge').textContent = S.weekDates[0]+' – '+S.weekDates[5];
+  renderDayCards();
+  renderDashboard();
+}
+
+/* ── DAY CARDS ── */
+function renderDayCards(){
+  const grid = document.getElementById('daysGrid');
+  grid.innerHTML='';
+  for(let i=0;i<6;i++){
+    const loaded=!!S.dayData[i], sat=i===5, date=S.weekDates[i]||'—';
+    const qtd = loaded ? S.dayData[i].reduce((s,r)=>s+(parseFloat(r['Qtd'])||0),0).toLocaleString('pt-BR') : '';
+    const card=document.createElement('div');
+    card.className='day-card'+(sat?' saturday':'')+(loaded?' loaded':'');
+    card.id='dc-'+i;
+    card.innerHTML=`
+      ${loaded?`<button class="dc-remove" onclick="removeDay(event,${i})">✕</button>`:''}
+      <input type="file" accept=".csv" onchange="loadDay(${i},this)" ${loaded?'style="display:none"':''}>
+      <div class="dc-icon">${loaded?'✅':sat?'📦':'📂'}</div>
+      <div class="dc-name">${DAY_SHORT[i]}${sat?' ×2':''}</div>
+      <div class="dc-date">${date}</div>
+      ${loaded
+        ?`<div class="dc-qtd">${qtd} itens</div><div class="dc-status ok">carregado</div>`
+        :`<div class="dc-status ${sat?'sat':'idle'}">${sat?'cobre sáb+dom':'sem upload'}</div>`}`;
+    grid.appendChild(card);
+  }
+  const dom=document.createElement('div');
+  dom.className='day-card locked';
+  dom.innerHTML=`<div class="dc-icon">😴</div><div class="dc-name">Dom</div><div class="dc-date">${S.weekDates[6]||'—'}</div><div class="dc-status idle">folga</div>`;
+  grid.appendChild(dom);
+}
+
+function loadDay(idx,input){
+  const file=input.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const p=Papa.parse(e.target.result,{header:true,skipEmptyLines:true,dynamicTyping:true});
+    if(!p.data.length){alert('CSV vazio ou inválido.');return;}
+    S.dayData[idx]=p.data;
+    renderDayCards();
+    renderDashboard();
+  };
+  reader.readAsText(file,'UTF-8');
+}
+
+function removeDay(evt,idx){
+  evt.stopPropagation();
+  S.dayData[idx]=null;
+  renderDayCards();
+  renderDashboard();
+}
+
+/* ── MARGIN ── */
+function onMarginChange(v){
+  S.margin=parseInt(v);
+  document.getElementById('marginDisp').textContent='+'+v+'%';
+  document.getElementById('thProj').textContent='Projeção semana (+'+v+'%)';
+  renderDashboard();
+}
+
+/* ── PROCESS ── */
+function isPromo(r){return (parseFloat(r['Valor (R$)']||r['Valor']||0))<0.5;}
+function getTier(a){if(a>=20)return'Alta demanda';if(a>=10)return'Demanda média';if(a>=4)return'Demanda baixa';return'Pontual';}
+function pillClass(t){return{'Alta demanda':'p-alta','Demanda média':'p-media','Demanda baixa':'p-baixa','Pontual':'p-pont','Cortesia/Promo':'p-promo'}[t]||'p-pont';}
+function barColor(t){return{'Alta demanda':'#2a78d6','Demanda média':'#1baf7a','Demanda baixa':'#eda100','Pontual':'#888780','Cortesia/Promo':'#d4537e'}[t]||'#888780';}
+function cap(s){return(s||'').toLowerCase().replace(/\b\w/g,c=>c.toUpperCase());}
+
+function processData(){
+  const {dayData,margin}=S;
+  const loadedIdx=dayData.map((d,i)=>d?i:null).filter(i=>i!==null);
+  S.loadedIdx=loadedIdx; S.nLoaded=loadedIdx.length;
+  if(!loadedIdx.length){S.products=[];return;}
+  const map={}, dayTotals=[0,0,0,0,0,0];
+  loadedIdx.forEach(idx=>{
+    dayData[idx].forEach(r=>{
+      const name=(r['Produto']||'').trim().toUpperCase();
+      if(!name)return;
+      const q=parseFloat(r['Qtd']||0), v=parseFloat(r['Valor (R$)']||r['Valor']||0);
+      if(!map[name])map[name]={name,byDay:[0,0,0,0,0,0],totalQtd:0,totalValor:0,promo:isPromo(r)};
+      map[name].byDay[idx]+=q; map[name].totalQtd+=q; map[name].totalValor+=v;
+      dayTotals[idx]+=q;
+    });
+  });
+  S.dayTotals=dayTotals;
+  const mult=1+margin/100;
+  S.products=Object.values(map).map(p=>{
+    const dp=loadedIdx.filter(i=>p.byDay[i]>0).length||1;
+    const avgReal=p.totalQtd/dp;
+    const metaDay=Math.ceil(avgReal*mult);
+    return{...p,daysPresent:dp,avgReal,metaDay,projWeek:Math.ceil(avgReal*6*mult),satMeta:metaDay*2,tier:p.promo?'Cortesia/Promo':getTier(avgReal)};
+  }).sort((a,b)=>b.projWeek-a.projWeek);
+}
+
+/* ── RENDER ── */
+function renderDashboard(){
+  processData();
+  const {products,dayTotals,nLoaded,loadedIdx,margin,weekDates}=S;
+  if(!products.length){
+    document.getElementById('dashboard').style.display='none';
+    document.getElementById('emptyState').style.display='block';
+    return;
+  }
+  document.getElementById('dashboard').style.display='block';
+  document.getElementById('emptyState').style.display='none';
+
+  const tReal=products.reduce((s,p)=>s+p.totalQtd,0);
+  const tProj=products.reduce((s,p)=>s+p.projWeek,0);
+  const tDia=products.reduce((s,p)=>s+p.metaDay,0);
+  const tSat=products.reduce((s,p)=>s+p.satMeta,0);
+  const nFut=6-nLoaded;
+  const avgDia=tReal/nLoaded;
+  const tc={};
+  products.forEach(p=>{tc[p.tier]=(tc[p.tier]||0)+1;});
+
+  document.getElementById('kpiGrid').innerHTML=`
+    <div class="kpi brew"><div class="kpi-lbl">Real acumulado</div><div class="kpi-val">${tReal.toLocaleString('pt-BR')}</div><div class="kpi-sub">${nLoaded} de 6 dias com dados</div></div>
+    <div class="kpi blue"><div class="kpi-lbl">Projeção semana (+${margin}%)</div><div class="kpi-val">${tProj.toLocaleString('pt-BR')}</div><div class="kpi-sub">${nFut} dia(s) ainda projetado(s)</div></div>
+    <div class="kpi green"><div class="kpi-lbl">Meta diária (+${margin}%)</div><div class="kpi-val">${tDia.toLocaleString('pt-BR')}</div><div class="kpi-sub">itens/dia útil (seg–sex)</div></div>
+    <div class="kpi blue"><div class="kpi-lbl">Meta sábado (×2)</div><div class="kpi-val">${tSat.toLocaleString('pt-BR')}</div><div class="kpi-sub">cobre sábado + domingo</div></div>
+    <div class="kpi"><div class="kpi-lbl">Produtos ativos</div><div class="kpi-val">${products.length}</div><div class="kpi-sub">alta: ${tc['Alta demanda']||0} · média: ${tc['Demanda média']||0}</div></div>`;
+
+  const futStr=DAY_NAMES.slice(nLoaded,6).join(', ')||'—';
+  document.getElementById('disclaimerBox').innerHTML=`
+    <strong>Como a projeção funciona:</strong>
+    A média diária real usa apenas os <strong>${nLoaded} dia(s) com dados</strong> (${loadedIdx.map(i=>DAY_SHORT[i]).join(', ')}).
+    Os <strong>${nFut} dia(s) futuros</strong> (${futStr}) são estimados com média + <strong>${margin}% de margem de segurança</strong>.
+    A coluna <strong>Meta sábado</strong> multiplica a meta diária por 2 — sábado cobre o domingo (folga da equipe).
+    Ajuste o slider para calibrar a margem conforme a demanda esperada do período.`;
+
+  document.getElementById('breakdownRow').innerHTML=[0,1,2,3,4,5,6].map(i=>{
+    const sat=i===5, dom=i===6, has=!!S.dayData[i];
+    const val=dayTotals[i]||0, proj=Math.round(avgDia*(1+margin/100));
+    if(dom)return`<div class="bd-cell dom"><div class="bd-day">Dom</div><div class="bd-date">${weekDates[6]||'—'}</div><div class="bd-val" style="font-size:20px">😴</div><div class="bd-proj-lbl">folga</div></div>`;
+    return`<div class="bd-cell${sat?' sat':''}">
+      <div class="bd-day">${DAY_SHORT[i]}${sat?' ×2':''}</div>
+      <div class="bd-date">${weekDates[i]||'—'}</div>
+      <div class="bd-val ${has?'':'proj'}">${has?val.toLocaleString('pt-BR'):'~'+proj.toLocaleString('pt-BR')}</div>
+      ${!has?`<div class="bd-proj-lbl">projeção</div>`:''}
+      ${sat&&has?`<div class="bd-tag">×2 = ${(val*2).toLocaleString('pt-BR')}</div>`:''}
+      ${sat&&!has?`<div class="bd-tag">×2 = ~${(proj*2).toLocaleString('pt-BR')}</div>`:''}
+    </div>`;
+  }).join('');
+
+  const tDefs=[
+    {k:'todos',l:'Todos',c:'act-all'},
+    {k:'Alta demanda',l:'🔵 Alta demanda',c:'act-alta'},
+    {k:'Demanda média',l:'🟢 Demanda média',c:'act-media'},
+    {k:'Demanda baixa',l:'🟡 Demanda baixa',c:'act-baixa'},
+    {k:'Pontual',l:'⚪ Pontual',c:'act-pont'},
+    {k:'Cortesia/Promo',l:'🎁 Cortesia/Promo',c:'act-promo'},
+  ];
+  document.getElementById('tierTabs').innerHTML=tDefs
+    .filter(d=>d.k==='todos'||tc[d.k])
+    .map(d=>{
+      const cnt=d.k==='todos'?products.length:tc[d.k];
+      const isAct=S.activeFilter===d.k;
+      return`<button class="tab${isAct?' '+d.c:''}" onclick="setFilter('${d.k}')">${d.l} (${cnt})</button>`;
+    }).join('');
+
+  renderTable();
+  renderCharts();
+  saveHistory();
+  renderHistory();
+}
+
+function renderTable(){
+  const {products,activeFilter,margin}=S;
+  const filtered=activeFilter==='todos'?products:products.filter(p=>p.tier===activeFilter);
+  const maxP=products[0]?.projWeek||1;
+  document.getElementById('prodBody').innerHTML=filtered.map((p,i)=>{
+    const pct=Math.round((p.projWeek/maxP)*100), bc=barColor(p.tier);
+    return`<tr>
+      <td style="color:var(--muted);font-size:11px">${i+1}</td>
+      <td style="font-weight:500">${cap(p.name)}</td>
+      <td><span class="pill ${pillClass(p.tier)}">${p.tier}</span></td>
+      <td class="r val-real">${p.totalQtd.toLocaleString('pt-BR')}</td>
+      <td class="r" style="color:var(--muted);font-size:11px">${p.daysPresent}</td>
+      <td class="r" style="color:var(--muted);font-size:11px">${p.avgReal.toFixed(1)}</td>
+      <td class="r val-day">${p.metaDay}</td>
+      <td class="r val-proj">${p.projWeek.toLocaleString('pt-BR')}</td>
+      <td class="r val-sat">${p.satMeta.toLocaleString('pt-BR')}</td>
+      <td><div class="bar-mini"><div class="bar-fill" style="width:${pct}%;background:${bc}"></div></div></td>
+    </tr>`;
+  }).join('');
+  const fr=filtered.reduce((s,p)=>s+p.totalQtd,0);
+  const fd=filtered.reduce((s,p)=>s+p.metaDay,0);
+  const fp=filtered.reduce((s,p)=>s+p.projWeek,0);
+  const fs=filtered.reduce((s,p)=>s+p.satMeta,0);
+  document.getElementById('totRow').innerHTML=`
+    <td colspan="3">TOTAL (${filtered.length} produtos)</td>
+    <td class="r">${fr.toLocaleString('pt-BR')}</td><td class="r">—</td><td class="r">—</td>
+    <td class="r">${fd.toLocaleString('pt-BR')}</td>
+    <td class="r">${fp.toLocaleString('pt-BR')}</td>
+    <td class="r">${fs.toLocaleString('pt-BR')}</td><td></td>`;
+}
+
+function setFilter(f){S.activeFilter=f;renderDashboard();}
+
+/* ── CHARTS ── */
+function renderCharts(){
+  const {products,margin}=S;
+  const top15=products.slice(0,15);
+  if(CHARTS.top)CHARTS.top.destroy();
+  CHARTS.top=new Chart(document.getElementById('chartTop'),{
+    type:'bar',
+    data:{
+      labels:top15.map(p=>cap(p.name).length>16?cap(p.name).slice(0,15)+'…':cap(p.name)),
+      datasets:[
+        {label:'Real acumulado',data:top15.map(p=>p.totalQtd),backgroundColor:'#C8C3BA',borderRadius:3,maxBarThickness:16},
+        {label:'Projeção +'+margin+'%',data:top15.map(p=>p.projWeek),backgroundColor:top15.map(p=>barColor(p.tier)),borderRadius:3,maxBarThickness:16}
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y.toLocaleString('pt-BR')}`}}},
+      scales:{x:{ticks:{font:{size:10},maxRotation:40,autoSkip:false},grid:{display:false}},y:{ticks:{font:{size:11}},grid:{color:'#E2DDD4'}}}
+    }
+  });
+  const tc={};
+  products.forEach(p=>{tc[p.tier]=(tc[p.tier]||0)+p.projWeek;});
+  const tKeys=Object.keys(tc), tColors=tKeys.map(t=>barColor(t));
+  if(CHARTS.tier)CHARTS.tier.destroy();
+  CHARTS.tier=new Chart(document.getElementById('chartTier'),{
+    type:'doughnut',
+    data:{labels:tKeys,datasets:[{data:tKeys.map(t=>tc[t]),backgroundColor:tColors,borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.label}: ${c.parsed.toLocaleString('pt-BR')}`}}},cutout:'55%'}
+  });
+  document.getElementById('tierLegend').innerHTML=tKeys.map((t,i)=>
+    `<div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);margin-bottom:3px">
+      <span style="width:10px;height:10px;border-radius:2px;background:${tColors[i]};flex-shrink:0"></span>${t}: ${tc[t].toLocaleString('pt-BR')}
+    </div>`).join('');
+}
+
+/* ── HISTORY ── */
+function saveHistory(){
+  const {products,weekDates,nLoaded,margin}=S;
+  if(!products.length||!weekDates[0])return;
+  const id=weekDates[0]+'_'+weekDates[5];
+  const entry={id,label:weekDates[0]+' – '+weekDates[5],nLoaded,margin,nProds:products.length,
+    totalProj:products.reduce((s,p)=>s+p.projWeek,0),totalReal:products.reduce((s,p)=>s+p.totalQtd,0),
+    savedAt:new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})};
+  const ei=S.history.findIndex(h=>h.id===id);
+  if(ei>=0)S.history[ei]=entry; else S.history.push(entry);
+  if(S.history.length>12)S.history.shift();
+  localStorage.setItem('bw_hist2',JSON.stringify(S.history));
+}
+
+function renderHistory(){
+  const panel=document.getElementById('historyPanel');
+  if(!S.history.length){panel.style.display='none';return;}
+  panel.style.display='block';
+  document.getElementById('histList').innerHTML=S.history.slice().reverse().map(h=>`
+    <div class="hist-item">
+      <div class="hist-dot"></div>
+      <span class="hist-week">${h.label}</span>
+      <span class="hist-meta">${h.nLoaded}/6 dias · +${h.margin}% · ${h.nProds} produtos</span>
+      <span class="hist-stat">Proj: ${h.totalProj.toLocaleString('pt-BR')} · Real: ${h.totalReal.toLocaleString('pt-BR')}</span>
+      <span style="font-size:10px;color:var(--muted)">salvo ${h.savedAt}</span>
+    </div>`).join('');
+}
+
+function clearHistory(){S.history=[];localStorage.removeItem('bw_hist2');document.getElementById('historyPanel').style.display='none';}
+
+/* ── EXPORT ── */
+function exportCSV(){
+  const {products,margin,weekDates}=S;
+  if(!products.length){alert('Nenhum dado para exportar.');return;}
+  const rows=[['Produto','Perfil','Real Acumulado','Dias c/ Dados','Média Diária Real','Meta Diária (+'+margin+'%)','Projeção Semana (+'+margin+'%)','Meta Sábado (×2)']];
+  products.forEach(p=>rows.push([cap(p.name),p.tier,p.totalQtd,p.daysPresent,p.avgReal.toFixed(1),p.metaDay,p.projWeek,p.satMeta]));
+  dlCSV(rows,'brewteco_producao_'+(weekDates[0]||'semana').replace(/\//g,'-')+'.csv');
+}
+
+function exportRomaneio(){
+  const {products,margin,weekDates}=S;
+  if(!products.length){alert('Nenhum dado para exportar.');return;}
+  const rows=[['Produto','Perfil','Meta Diária (+'+margin+'%)','Meta Sábado (×2)','Projeção Semana (+'+margin+'%)']];
+  products.forEach(p=>rows.push([cap(p.name),p.tier,p.metaDay,p.satMeta,p.projWeek]));
+  dlCSV(rows,'brewteco_romaneio_'+(weekDates[0]||'semana').replace(/\//g,'-')+'.csv');
+}
+
+function dlCSV(rows,name){
+  const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=name;a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* ── RESET ── */
+function resetAll(){
+  if(!confirm('Limpar todos os dados da semana?'))return;
+  S.dayData=[null,null,null,null,null,null];S.products=[];S.activeFilter='todos';
+  S.weekDates=['','','','','','',''];
+  document.getElementById('weekStart').value='';
+  document.getElementById('weekBadge').textContent='sem dados';
+  if(CHARTS.top){CHARTS.top.destroy();CHARTS.top=null;}
+  if(CHARTS.tier){CHARTS.tier.destroy();CHARTS.tier=null;}
+  renderDayCards();
+  document.getElementById('dashboard').style.display='none';
+  document.getElementById('emptyState').style.display='block';
+  setThisWeek();
+}
+
+/* ── INIT ── */
+renderDayCards();
+setThisWeek();
+renderHistory();
+</script>
+</body>
+</html>
