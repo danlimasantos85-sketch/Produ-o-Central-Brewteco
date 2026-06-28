@@ -283,6 +283,20 @@ tfoot td.r{text-align:right}
 </div>
 
 <script>
+// ==========================================
+// BLACKLIST ATUALIZADA DA COZINHA CENTRAL
+// ==========================================
+const ITENS_IGNORADOS = [
+  'Linguica Toscana', 'Batata Frita', 'File Tilapia', 'Bacon Burguer', 
+  'Caldinho Feijao', 'Bobo Camarao', 'Batata Cheddar Bacon', 
+  'Burger Carioquissimo Burguer', 'Pao Alho', 'Frango A Passarinho', 
+  'Rabanada Doce Leite', 'Espeto Coracao', 'Caesar Salad', 
+  'Sobremesa Restaurant Week', 'Pudim Leite', 'Principal Restaurant Week', 
+  'Entrada Restaurant Week', 'Mix Tropical', 'Falafel', 'Sorvete Creme 2 Bolas', 
+  'Buraco Quente Vegetariano', 'Brigadeiro Colher', 'Rabanada Aniversario', 
+  'Arroz Branco', 'Batata Portuguesa', 'Feijao Preto'
+];
+
 const DAY_NAMES = ['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo'];
 const DAY_SHORT = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
 
@@ -357,9 +371,20 @@ function setWeek(){
 /* ── CARDS ── */
 function renderDayCards(){
   const grid = document.getElementById('daysGrid'); grid.innerHTML='';
+  const blacklist = ITENS_IGNORADOS.map(i => i.trim().toUpperCase());
+
   for(let i=0;i<6;i++){
     const loaded=!!S.dayData[i], sat=i===5, date=S.weekDates[i]||'—';
-    const qtd = loaded ? S.dayData[i].reduce((s,r)=>s+(parseFloat(r['Qtd'])||0),0).toLocaleString('pt-BR') : '';
+    
+    let totalItensDia = 0;
+    if(loaded) {
+      totalItensDia = S.dayData[i].reduce((s,r)=>{
+        const nomeProd = (r['Produto'] || '').trim().toUpperCase();
+        if(blacklist.includes(nomeProd)) return s;
+        return s + (parseFloat(r['Qtd'])||0);
+      },0);
+    }
+
     const card=document.createElement('div');
     card.className='day-card'+(sat?' saturday':'')+(loaded?' loaded':'');
     card.innerHTML=`
@@ -368,7 +393,7 @@ function renderDayCards(){
       <div class="dc-icon">${loaded?'✅':sat?'📦':'📂'}</div>
       <div class="dc-name">${DAY_SHORT[i]}${sat?' ×2':''}</div>
       <div class="dc-date">${date}</div>
-      ${loaded?`<div class="dc-qtd">${qtd} itens</div><div class="dc-status ok">carregado</div>`:`<div class="dc-status ${sat?'sat':'idle'}">${sat?'cobre sáb+dom':'sem upload'}</div>`}`;
+      ${loaded?`<div class="dc-qtd">${totalItensDia.toLocaleString('pt-BR')} un</div><div class="dc-status ok">carregado</div>`:`<div class="dc-status ${sat?'sat':'idle'}">${sat?'cobre sáb+dom':'sem upload'}</div>`}`;
     grid.appendChild(card);
   }
   const dom=document.createElement('div'); dom.className='day-card locked';
@@ -391,15 +416,15 @@ function removeDay(evt,idx){
   evt.stopPropagation(); S.dayData[idx]=null; saveStateToStorage(); renderDayCards(); renderDashboard();
 }
 
-/* DINAMIC MARGIN FIX */
+/* MARGIN TRIGGER */
 function onMarginChange(v){
   S.margin=parseInt(v); 
   document.getElementById('marginDisp').textContent='+'+v+'%';
   saveStateToStorage(); 
-  renderDashboard(); // Força o recalculo instantâneo de todas as estruturas e tabelas ativas
+  renderDashboard();
 }
 
-/* ── DATA CORE (DYNAMIC MARGIN CALCULATION) ── */
+/* ── DATA CORE ── */
 function isPromo(r){return (parseFloat(r['Valor (R$)']||r['Valor']||0))<0.5;}
 function getTier(a){if(a>=20)return'Alta demanda';if(a>=10)return'Demanda média';if(a>=4)return'Demanda baixa';return'Pontual';}
 function pillClass(t){return{'Alta demanda':'p-alta','Demanda média':'p-media','Demanda baixa':'p-baixa','Pontual':'p-pont','Cortesia/Promo':'p-promo'}[t]||'p-pont';}
@@ -412,10 +437,17 @@ function processData(){
   S.loadedIdx=loadedIdx; S.nLoaded=loadedIdx.length;
   if(!loadedIdx.length){S.products=[];return;}
   
+  const blacklist = ITENS_IGNORADOS.map(i => i.trim().toUpperCase());
   const map={}, dayTotals=[0,0,0,0,0,0];
+
   loadedIdx.forEach(idx=>{
     dayData[idx].forEach(r=>{
-      const name=(r['Produto']||'').trim().toUpperCase(); if(!name)return;
+      const name=(r['Produto']||'').trim().toUpperCase(); 
+      if(!name) return;
+      
+      // Filtro ativo da Blacklist
+      if(blacklist.includes(name)) return;
+
       const q=parseFloat(r['Qtd']||0), v=parseFloat(r['Valor (R$)']||r['Valor']||0);
       if(!map[name])map[name]={name,byDay:[0,0,0,0,0,0],totalQtd:0,totalValor:0,promo:isPromo(r)};
       map[name].byDay[idx]+=q; map[name].totalQtd+=q; map[name].totalValor+=v;
@@ -427,7 +459,6 @@ function processData(){
     const dp=loadedIdx.filter(i=>p.byDay[i]>0).length||1;
     const avgReal=p.totalQtd/dp;
     const metaDay=Math.ceil(avgReal*mult);
-    const satMeta=Math.ceil((p.byDay[5] > 0 ? p.byDay[5] : (avgReal * 2)) * mult);
     
     let calculatedWeekMeta = [0,0,0,0,0,0];
     for(let i=0;i<6;i++) {
@@ -505,14 +536,14 @@ function renderDashboard(){
   const tc={}; products.forEach(p=>{tc[p.tier]=(tc[p.tier]||0)+1;});
 
   document.getElementById('kpiGrid').innerHTML=`
-    <div class="kpi brew"><div class="kpi-lbl">Vendido Acumulado (Bruto)</div><div class="kpi-val">${tReal.toLocaleString('pt-BR')}</div><div class="kpi-sub">${nLoaded} dias enviados</div></div>
+    <div class="kpi brew"><div class="kpi-lbl">Vendido Cozinha (Bruto)</div><div class="kpi-val">${tReal.toLocaleString('pt-BR')}</div><div class="kpi-sub">${nLoaded} dias enviados</div></div>
     <div class="kpi blue"><div class="kpi-lbl">Total Produção Semanal</div><div class="kpi-val">${tProj.toLocaleString('pt-BR')}</div><div class="kpi-sub">Com margem de +${margin}%</div></div>
     <div class="kpi green"><div class="kpi-lbl">Meta Diária Sugerida</div><div class="kpi-val">${tDia.toLocaleString('pt-BR')}</div><div class="kpi-sub">Com margem de +${margin}%</div></div>
     <div class="kpi blue"><div class="kpi-lbl">Meta Sábado (Sáb+Dom)</div><div class="kpi-val">${tSat.toLocaleString('pt-BR')}</div><div class="kpi-sub">Com margem de +${margin}%</div></div>
-    <div class="kpi"><div class="kpi-lbl">Itens no Sistema</div><div class="kpi-val">${products.length}</div><div class="kpi-sub">Alta saída: ${tc['Alta demanda']||0}</div></div>`;
+    <div class="kpi"><div class="kpi-lbl">Itens de Cozinha</div><div class="kpi-val">${products.length}</div><div class="kpi-sub">Alta saída: ${tc['Alta demanda']||0}</div></div>`;
 
   document.getElementById('disclaimerBox').innerHTML=`
-    <strong>Cálculo 100% Dinâmico:</strong> Movimente o controle deslizante acima para ajustar instantaneamente a produção de todos os itens da tabela. Configurado agora para **+${margin}%**.`;
+    <strong>Filtro de Cozinha Central Ativo:</strong> Os ${ITENS_IGNORADOS.length} itens informados de saladas, pratos montados e guarnições de praça foram completamente filtrados para focar o romaneio apenas no seu lote de produção bruta.`;
 
   // Mini cards por dia
   document.getElementById('breakdownRow').innerHTML=[0,1,2,3,4,5,6].map(i=>{
