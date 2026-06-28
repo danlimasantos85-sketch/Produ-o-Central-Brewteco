@@ -23,7 +23,6 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--surface2);color:v
 button,input,textarea,select{font-family:inherit;cursor:pointer}
 textarea{cursor:text}
 
-/* TOPBAR LIMPA E SÓLIDA (SEM AZULEJOS) */
 .topbar{
   background-color: var(--navy);
   height: 56px;
@@ -45,11 +44,9 @@ textarea{cursor:text}
 .btn-bar{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;font-size:11px;font-weight:700;padding:5px 12px;border-radius:6px;transition:all .15s}
 .btn-bar:hover{background:rgba(255,255,255,0.2);border-color:#fff}
 
-/* PAGE */
 .page{max-width:1060px;margin:0 auto;padding:1.5rem}
 .sec{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.6rem}
 
-/* CARD / PANEL */
 .card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:1.1rem 1.25rem;margin-bottom:1.25rem;box-shadow:var(--shadow)}
 
 /* SETUP */
@@ -67,6 +64,15 @@ input[type=date]:focus{border-color:var(--brew)}
 .mval{font-size:14px;font-weight:700;color:var(--brew);min-width:38px;text-align:center}
 input[type=range]{width:130px;accent-color:var(--brew)}
 .minfo{font-size:11px;color:var(--muted);line-height:1.5}
+
+/* CONFIGURAÇÃO DE MEDIDAS */
+.config-toggle-btn { background: var(--surface3); color: var(--navy); border: 1px solid var(--border-md); margin-bottom: 1rem; }
+.config-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; margin-top: 10px; max-height: 200px; overflow-y: auto; padding: 5px; border: 1px solid var(--border); border-radius: 6px; }
+.config-item { background: var(--surface2); padding: 8px; border-radius: 6px; display: flex; flex-direction: column; gap: 4px; border: 0.5px solid var(--border-md); }
+.config-item-name { font-weight: 600; font-size: 11px; color: var(--navy); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.config-inputs { display: flex; gap: 4px; }
+.config-inputs select, .config-inputs input { font-size: 11px; padding: 2px 4px; border: 0.5px solid var(--border-md); border-radius: 4px; }
+.config-inputs input { width: 70px; }
 
 /* IMPORT PANEL */
 .import-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -232,6 +238,14 @@ tfoot td.r{text-align:right}
       <span class="mval" id="marginDisp">+30%</span>
       <span class="minfo">Aplicada sobre a média real. Sábado produz ×2 (cobre domingo — folga da equipe).</span>
     </div>
+    
+    <!-- NOVO: GERENCIADOR DE MEDIDAS -->
+    <hr style="border:0; border-top:1px dashed var(--border); margin: 12px 0;">
+    <button class="btn config-toggle-btn" onclick="toggleConfigPanel()">⚙️ Configurar Unidades de Medida (Fatores)</button>
+    <div id="configPanel" style="display:none;">
+      <div style="font-size:11px; color:var(--muted); margin-bottom: 8px;">Defina a unidade e o peso/volume de 1 porção vendida. Ex: Para carne de 220g coloque 0.22 kg. Para croquete por unidade coloque 1 un.</div>
+      <div class="config-grid" id="configGrid"></div>
+    </div>
   </div>
 
   <!-- IMPORT PANEL -->
@@ -257,9 +271,7 @@ tfoot td.r{text-align:right}
       </div>
 
       <div class="import-hint">
-        <strong>💡 Funciona com qualquer formato que o Gemini gerar:</strong>
-        vírgula, ponto-e-vírgula, tab, texto livre com traço, espaçamento irregular, BOM UTF-8, números BR (1.234), colunas extras de valor — o sistema detecta e extrai automaticamente.<br>
-        <strong>Se o arquivo travar:</strong> abra no Excel → Ctrl+A → Ctrl+C → cole na caixa ao lado.
+        <strong>💡 Conversão Automática de Medidas:</strong> O sistema memoriza o que você configurar acima. Se você disser que o "Anjo" é calculado em kg com fator 0.22, quando o sistema ler 100 unidades vendidas, ele mostrará a produção de 22kg automaticamente.
       </div>
 
       <div class="chip-row" id="chipRow"></div>
@@ -272,7 +284,7 @@ tfoot td.r{text-align:right}
 
   <!-- CRITICAL -->
   <div class="crit" id="critPanel" style="display:none">
-    <div class="crit-title">🔥 Itens de volume crítico (meta diária > 40 un com margem)</div>
+    <div class="crit-title">🔥 Itens de volume crítico (meta diária > 40 un/kg com margem)</div>
     <div class="crit-list" id="critList"></div>
   </div>
 
@@ -280,7 +292,7 @@ tfoot td.r{text-align:right}
   <div id="dashboard" style="display:none">
     <div class="kpi-row" id="kpiRow"></div>
     <div class="disclaimer" id="disclaBox"></div>
-    <div class="sec">Volume por dia da semana</div>
+    <div class="sec">Volume total por dia da semana (ajustado por unidade de medida)</div>
     <div class="bk-row" id="bkRow"></div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
       <div class="sec" style="margin:0">Cronograma de produção</div>
@@ -291,7 +303,7 @@ tfoot td.r{text-align:right}
       <table><thead id="thead"></thead><tbody id="tbody"></tbody><tfoot><tr id="tfoot"></tr></tfoot></table>
     </div>
     <div class="chart-card" id="chartCard">
-      <h3>Top 15 — projeção semanal com margem</h3>
+      <h3>Top 15 — projeção semanal com margem (em unidades equivalentes)</h3>
       <div style="position:relative;height:260px"><canvas id="chartTop"></canvas></div>
     </div>
   </div>
@@ -320,6 +332,14 @@ tfoot td.r{text-align:right}
 <script>
 const NOISE_WORDS = new Set(['produto','item','descricao','descricao','qtd','quantidade','quant','total','subtotal','valor','preco','preco','unidade','un','pc','pcs','loja','data','romaneio','producao','producao','geral','observacao','observacao','categoria','cat','litros','litro','kg','g','ml','l','embalagem','ref','codigo','codigo','nome','descr','und','nro','nr','seq','no','estornos','grupos','grupo','eventos','evento','bar','litros']);
 const SKIP_START = ['total','subtotal','geral','observ'];
+
+// Dicionário padrão de conversões para os itens conhecidos
+let MEDIDAS_DB = {
+  'SCHNITZEL': { uni: 'kg', fator: 0.22 },
+  'ANJO': { uni: 'kg', fator: 0.22 },
+  'MIGNON': { uni: 'kg', fator: 0.20 },
+  'CROQUETE': { uni: 'un', fator: 1.0 }
+};
 
 function _norm(s) { return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z]/g,''); }
 function _isNoise(token) {
@@ -403,9 +423,13 @@ let pendingImport = null;
 function save() {
   if (!S.weekDates[0]) return;
   localStorage.setItem('bw_v3_state', JSON.stringify({ weekDates: S.weekDates, margin: S.margin, dayData: S.dayData, externals: S.externals }));
+  localStorage.setItem('bw_medidas_db', JSON.stringify(MEDIDAS_DB));
 }
 
 function loadSaved() {
+  const savedMedidas = localStorage.getItem('bw_medidas_db');
+  if (savedMedidas) { try { MEDIDAS_DB = JSON.parse(savedMedidas); } catch(e){} }
+
   const raw = localStorage.getItem('bw_v3_state'); if (!raw) return;
   try {
     const p = JSON.parse(raw);
@@ -429,6 +453,49 @@ function setWeek() {
   save(); renderCards(); renderDashboard();
 }
 function onMargin(v) { S.margin = parseInt(v); document.getElementById('marginDisp').textContent = '+'+v+'%'; save(); renderDashboard(); }
+
+/* FUNÇÕES DE CONFIGURAÇÃO DE MEDIDA */
+function toggleConfigPanel() {
+  const p = document.getElementById('configPanel');
+  p.style.display = p.style.display === 'none' ? 'block' : 'none';
+  if(p.style.display === 'block') renderConfigGrid();
+}
+
+function renderConfigGrid() {
+  const grid = document.getElementById('configGrid');
+  if (!S.products.length && Object.keys(MEDIDAS_DB).length === 4) {
+    grid.innerHTML = '<div style="padding:10px; color:var(--muted); font-size:12px;">Nenhum produto carregado para configurar. Faça o upload de dados primeiro.</div>';
+    return;
+  }
+  
+  // Consolida chaves do banco padrão com chaves dos itens ativos atuais
+  let chaves = new Set([...Object.keys(MEDIDAS_DB), ...S.products.map(p => p.name.toUpperCase())]);
+  
+  grid.innerHTML = Array.from(chaves).sort().map(key => {
+    const item = MEDIDAS_DB[key] || { uni: 'un', fator: 1.0 };
+    return `
+      <div class="config-item">
+        <div class="config-item-name" title="${key}">${cap(key)}</div>
+        <div class="config-inputs">
+          <select onchange="updateMedida('${key}', 'uni', this.value)">
+            <option value="un" ${item.uni==='un'?'selected':''}>un</option>
+            <option value="kg" ${item.uni==='kg'?'selected':''}>kg</option>
+            <option value="L" ${item.uni==='L'?'selected':''}>L</option>
+          </select>
+          <input type="number" step="0.001" min="0.001" value="${item.fator}" onchange="updateMedida('${key}', 'fator', this.value)" placeholder="Fator">
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function updateMedida(key, field, value) {
+  if (!MEDIDAS_DB[key]) MEDIDAS_DB[key] = { uni: 'un', fator: 1.0 };
+  if (field === 'uni') MEDIDAS_DB[key].uni = value;
+  if (field === 'fator') MEDIDAS_DB[key].fator = Math.max(0.001, parseFloat(value) || 1.0);
+  save();
+  renderDashboard();
+}
 
 function smartDetectDateIndex(filename, contentText) {
   const fileDateMatch = filename.match(/(\d{2})[\/_](\d{2})/);
@@ -601,16 +668,42 @@ function processData() {
       map[key].extByDay[ext.targetIdx] += q; map[key].totalQtd += q;
     });
   });
+  
   S.products = Object.values(map).map(p => {
-    const dp = Math.max(loadedIdx.filter(i => p.byDay[i]>0).length, 1), avgReal = p.totalQtd / dp, metaDay = Math.ceil(avgReal * mult);
+    const key = p.name.toUpperCase();
+    const config = MEDIDAS_DB[key] || { uni: 'un', fator: 1.0 };
+    
+    const dp = Math.max(loadedIdx.filter(i => p.byDay[i]>0).length, 1);
+    const avgReal = p.totalQtd / dp;
+    
+    // Mantenha o cálculo base em porções vendidas (unidades)
+    const metaDayPorcoes = Math.ceil(avgReal * mult);
+    
+    // Aplica o fator de conversão de medida nos resultados finais
+    const metaDay = parseFloat((metaDayPorcoes * config.fator).toFixed(2));
+    const satMeta = parseFloat(((metaDayPorcoes * 2) * config.fator).toFixed(2));
+    
     const allocDay = [0,0,0,0,0,0];
     for (let i=0; i<6; i++) {
-      const base = S.dayData[i] ? Math.ceil(p.byDay[i] * mult) : (i===5 ? metaDay*2 : metaDay);
-      allocDay[i] = base + p.extByDay[i]; dayTotals[i] += allocDay[i];
+      const basePorcoes = S.dayData[i] ? Math.ceil(p.byDay[i] * mult) : (i===5 ? metaDayPorcoes*2 : metaDayPorcoes);
+      const totalPorcoesDia = basePorcoes + p.extByDay[i];
+      allocDay[i] = parseFloat((totalPorcoesDia * config.fator).toFixed(2));
+      dayTotals[i] += allocDay[i];
     }
-    return { ...p, avgReal, metaDay, satMeta: metaDay * 2, projWeek: allocDay.reduce((a,b)=>a+b,0), allocDay, tier: getTier(avgReal) };
+    
+    return { 
+      ...p, 
+      avgReal, 
+      metaDay, 
+      satMeta, 
+      projWeek: allocDay.reduce((a,b)=>a+b,0), 
+      allocDay, 
+      tier: getTier(avgReal),
+      uni: config.uni
+    };
   }).sort((a,b) => b.projWeek - a.projWeek);
-  S.dayTotals = dayTotals;
+  
+  S.dayTotals = dayTotals.map(v => parseFloat(v.toFixed(2)));
 }
 
 function renderDashboard() {
@@ -621,25 +714,25 @@ function renderDashboard() {
   const tProj = products.reduce((s,p)=>s+p.projWeek,0), tSat = dayTotals[5], avgDay = S.products.reduce((s,p)=>s+p.metaDay,0);
 
   document.getElementById('kpiRow').innerHTML = `
-    <div class="kpi blue"><div class="kpi-l">Projeção semanal</div><div class="kpi-v">${tProj.toLocaleString('pt-BR')}</div><div class="kpi-s">+${margin}% margem</div></div>
-    <div class="kpi brew"><div class="kpi-l">Meta diária total</div><div class="kpi-v">${avgDay.toLocaleString('pt-BR')}</div><div class="kpi-s">itens/dia útil</div></div>
-    <div class="kpi green"><div class="kpi-l">Meta sábado (×2)</div><div class="kpi-v">${tSat.toLocaleString('pt-BR')}</div><div class="kpi-s">cobre sáb + dom</div></div>
+    <div class="kpi blue"><div class="kpi-l">Volume Total Estimado</div><div class="kpi-v">${tProj.toLocaleString('pt-BR', {maximumFractionDigits:1})}</div><div class="kpi-s">Unidades mistas (un/kg/L)</div></div>
+    <div class="kpi brew"><div class="kpi-l">Média Diária Produção</div><div class="kpi-v">${avgDay.toLocaleString('pt-BR', {maximumFractionDigits:1})}</div><div class="kpi-s">massa de volume/dia</div></div>
+    <div class="kpi green"><div class="kpi-l">Meta sábado (×2)</div><div class="kpi-v">${tSat.toLocaleString('pt-BR', {maximumFractionDigits:1})}</div><div class="kpi-s">cobre sáb + dom</div></div>
     <div class="kpi"><div class="kpi-l">Produtos ativos</div><div class="kpi-v">${products.length}</div><div class="kpi-s">filtros aplicados</div></div>`;
 
-  document.getElementById('disclaBox').innerHTML = `<strong>Como funciona:</strong> Média real sobre <strong>${nLoaded} dia(s)</strong>. Sábado = meta × 2 (cobre domingo).`;
+  document.getElementById('disclaBox').innerHTML = `<strong>Aviso de Unidades:</strong> Agora os cálculos abaixo multiplicam as vendas pelo fator cadastrado no painel de configurações para exibir KG, Litros ou Unidades reais de lote.`;
 
   document.getElementById('bkRow').innerHTML = [0,1,2,3,4,5,6].map(i => {
     if (i===6) return `<div class="bk dom"><div class="bk-day">Dom</div><div class="bk-date">${weekDates[6]||'—'}</div><div class="bk-val" style="font-size:18px">😴</div><div class="bk-sub">folga</div></div>`;
     const has = !!S.dayData[i], val = dayTotals[i]||0;
     return `<div class="bk${i===5?' sat':''}">
       <div class="bk-day">${DSHORT[i]}${i===5?' ×2':''}</div><div class="bk-date">${weekDates[i]||'—'}</div>
-      <div class="bk-val${has?'':' proj'}">${val.toLocaleString('pt-BR')}</div>
+      <div class="bk-val${has?'':' proj'}">${val.toLocaleString('pt-BR', {maximumFractionDigits:1})}</div>
     </div>`;
   }).join('');
 
-  const crits = products.filter(p => p.metaDay > 40);
+  const crits = products.filter(p => p.projWeek > 150 || (p.uni === 'kg' && p.metaDay > 15));
   document.getElementById('critPanel').style.display = crits.length ? 'block' : 'none';
-  if (crits.length) document.getElementById('critList').innerHTML = crits.map(p=>`<div class="crit-item">🔥 ${cap(p.name)} — ${p.metaDay}/dia</div>`).join('');
+  if (crits.length) document.getElementById('critList').innerHTML = crits.map(p=>`<div class="crit-item">🔥 ${cap(p.name)} — ${p.metaDay} ${p.uni}/dia</div>`).join('');
 
   renderViewTabs(); renderTable(); renderChart();
 }
@@ -653,13 +746,13 @@ function switchView(v) { S.view = v; document.getElementById('chartCard').style.
 function renderTable() {
   const { products, view } = S; const thead = document.getElementById('thead'), tbody = document.getElementById('tbody'), maxP = products[0]?.projWeek || 1;
   if (view === 'geral') {
-    thead.innerHTML = `<tr><th>#</th><th>Produto</th><th>Perfil</th><th class="r">Real acum.</th><th class="r de-dia">Meta diária</th><th class="r col-proj">Projeção semana</th><th class="r col-sat">Sábado (×2)</th><th></th></tr>`;
-    tbody.innerHTML = products.map((p,i) => `<tr><td>${i+1}</td><td style="font-weight:500">${cap(p.name)}</td><td><span class="pill ${pillClass(p.tier)}">${p.tier}</span></td><td class="r">${p.totalQtd}</td><td class="r"><span class="vday">${p.metaDay}</span></td><td class="r"><span class="vproj">${p.projWeek}</span></td><td class="r"><span class="vsat">${p.satMeta}</span></td><td><div class="bar-mini"><div class="bar-f" style="width:${Math.round((p.projWeek/maxP)*100)}%;background:${barColor(p.tier)}"></div></div></td></tr>`).join('');
+    thead.innerHTML = `<tr><th>#</th><th>Produto</th><th>U.M.</th><th>Perfil</th><th class="r">Venda (un)</th><th class="r de-dia">Meta diária</th><th class="r col-proj">Projeção semana</th><th class="r col-sat">Sábado (×2)</th><th></th></tr>`;
+    tbody.innerHTML = products.map((p,i) => `<tr><td>${i+1}</td><td style="font-weight:500">${cap(p.name)}</td><td><strong style="color:var(--brew)">${p.uni}</strong></td><td><span class="pill ${pillClass(p.tier)}">${p.tier}</span></td><td class="r">${p.totalQtd}</td><td class="r"><span class="vday">${p.metaDay.toLocaleString('pt-BR')}</span></td><td class="r"><span class="vproj">${p.projWeek.toLocaleString('pt-BR')}</span></td><td class="r"><span class="vsat">${p.satMeta.toLocaleString('pt-BR')}</span></td><td><div class="bar-mini"><div class="bar-f" style="width:${Math.round((p.projWeek/maxP)*100)}%;background:${barColor(p.tier)}"></div></div></td></tr>`).join('');
   } else {
     const di = parseInt(view);
-    thead.innerHTML = `<tr><th>#</th><th>Produto</th><th>Perfil</th><th class="r">Venda real</th><th class="r col-ext">Externo</th><th class="r col-proj">👉 PRODUZIR HOJE</th></tr>`;
+    thead.innerHTML = `<tr><th>#</th><th>Produto</th><th>U.M.</th><th>Perfil</th><th class="r">Venda Base (un)</th><th class="r col-ext">Externo</th><th class="r col-proj">👉 PRODUZIR HOJE</th></tr>`;
     const rows = products.filter(p => p.allocDay[di] > 0);
-    tbody.innerHTML = rows.map((p,i) => `<tr><td>${i+1}</td><td style="font-weight:700">${cap(p.name)}</td><td><span class="pill ${pillClass(p.tier)}">${p.tier}</span></td><td class="r">${S.dayData[di]?p.byDay[di]:'—'}</td><td class="r"><span class="vext">${p.extByDay[di]>0?p.extByDay[di]:'—'}</span></td><td class="r" style="background:var(--foam)"><span class="vproj">${p.allocDay[di]} un</span></td></tr>`).join('');
+    tbody.innerHTML = rows.map((p,i) => `<tr><td>${i+1}</td><td style="font-weight:700">${cap(p.name)}</td><td><strong style="color:var(--brew)">${p.uni}</strong></td><td><span class="pill ${pillClass(p.tier)}">${p.tier}</span></td><td class="r">${S.dayData[di]?p.byDay[di]:'—'}</td><td class="r"><span class="vext">${p.extByDay[di]>0?p.extByDay[di]:'—'}</span></td><td class="r" style="background:var(--foam)"><span class="vproj">${p.allocDay[di].toLocaleString('pt-BR')} ${p.uni}</span></td></tr>`).join('');
   }
 }
 
@@ -674,11 +767,11 @@ function renderChart() {
   }
 }
 
-function exportCSV() { _dlCSV(S.products.map(p=>[cap(p.name),p.tier,p.metaDay,p.projWeek]), 'producao.csv'); }
-function exportRomaneio() { _dlCSV(S.products.map(p=>[cap(p.name),p.metaDay,p.satMeta]), 'romaneio.csv'); }
+function exportCSV() { _dlCSV(S.products.map(p=>[cap(p.name),p.uni,p.metaDay,p.projWeek]), 'producao.csv'); }
+function exportRomaneio() { _dlCSV(S.products.map(p=>[cap(p.name),p.uni,p.metaDay,p.satMeta]), 'romaneio.csv'); }
 function _dlCSV(rows,name) { const csv=rows.map(r=>r.map(c=>'"'+String(c)+'"').join(',')).join('\n'); const blob=new Blob(['\uFEFF'+csv],{type:'text/csv'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=name; a.click(); }
 
-function resetAll() { localStorage.removeItem('bw_v3_state'); location.reload(); }
+function resetAll() { localStorage.removeItem('bw_v3_state'); localStorage.removeItem('bw_medidas_db'); location.reload(); }
 
 /* INITIALIZATION */
 renderCards();
