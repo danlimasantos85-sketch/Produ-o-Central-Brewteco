@@ -35,7 +35,7 @@ input{font-family:inherit}
 .btn-topbar:hover{background:rgba(255,255,255,.18)}
 
 .page{max-width:1060px;margin:0 auto;padding:1.5rem}
-.sec-label{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.6rem;display:flex;justify-content:between;align-items:center}
+.sec-label{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.6rem;display:flex;justify-content:space-between;align-items:center}
 
 .setup-panel{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:1.1rem 1.25rem;margin-bottom:1.25rem;box-shadow:var(--shadow-sm)}
 .setup-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:.75rem}
@@ -50,6 +50,15 @@ input[type=date]:focus{border-color:var(--brew)}
 .margin-val-display{font-size:14px;font-weight:700;color:var(--brew);min-width:38px;text-align:center}
 input[type=range]{width:130px;accent-color:var(--brew)}
 .margin-info{font-size:11px;color:var(--muted);line-height:1.5}
+
+/* NOVO PAINEL DE EXTERNOS */
+.external-panel{background:#F4EFE6;border:1px solid var(--border-md);border-radius:var(--radius-lg);padding:1rem;margin-bottom:1.25rem}
+.external-upload-zone{background:#fff;border:2px dashed var(--brew);border-radius:var(--radius);padding:1rem;text-align:center;position:relative;cursor:pointer}
+.external-upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
+.external-list{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.external-chip{background:var(--navy);color:#fff;font-size:11px;padding:4px 10px;border-radius:99px;display:flex;align-items:center;gap:6px}
+.external-chip button{background:transparent;border:none;color:rgba(255,255,255,0.6);font-size:11px;font-weight:700}
+.external-chip button:hover{color:#ff8080}
 
 .days-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:1.25rem}
 .day-card{background:var(--surface);border:1.5px dashed var(--border-md);border-radius:var(--radius-lg);padding:.75rem .6rem;text-align:center;cursor:pointer;position:relative;transition:border-color .15s,background .15s;min-height:122px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
@@ -152,7 +161,7 @@ tfoot td.r{text-align:right}
 }
 
 @media print{
-  .topbar,.setup-panel,.days-grid,.tabs,.chart-row,.panel,.btn,button,.critical-panel,.disclaimer{display:none!important}
+  .topbar,.setup-panel,.external-panel,.days-grid,.tabs,.chart-row,.panel,.btn,button,.critical-panel,.disclaimer{display:none!important}
   .page{padding:0;max-width:100%}
   body{background:#fff;color:#000;font-size:14px}
   .kpi-grid{grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:2rem}
@@ -204,6 +213,16 @@ tfoot td.r{text-align:right}
         Modifique o slider para alterar a meta de produção em tempo real. **Sábado engloba o domingo automaticamente**.
       </span>
     </div>
+  </div>
+
+  <!-- NOVO: UPLOAD DE ROMANEIOS EXTERNOS SIMULTÂNEOS -->
+  <div class="external-panel">
+    <div class="sec-label" style="margin-bottom: 0.4rem; color: var(--navy)">📦 Romaneios de Lojas Externas (Consolidação Simultânea)</div>
+    <div class="external-upload-zone">
+      <span>📂 Clique ou Arraste múltiplos arquivos de Romaneio para somar à produção diária</span>
+      <input type="file" multiple accept=".csv" onchange="loadMultipleExternals(this)">
+    </div>
+    <div class="external-list" id="externalList"></div>
   </div>
 
   <!-- DAY CARDS -->
@@ -283,9 +302,6 @@ tfoot td.r{text-align:right}
 </div>
 
 <script>
-// ==========================================
-// BLACKLIST DA COZINHA CENTRAL
-// ==========================================
 const ITENS_IGNORADOS = [
   'Linguica Toscana', 'Batata Frita', 'File Tilapia', 'Bacon Burguer', 
   'Caldinho Feijao', 'Bobo Camarao', 'Batata Cheddar Bacon', 
@@ -303,6 +319,7 @@ const DAY_SHORT = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
 let S = {
   weekDates:    ['','','','','','',''],
   dayData:      [null,null,null,null,null,null],
+  externalLogs: [], // Array para guardar os multiplos romaneios externos
   margin:       30,
   activeFilter: 'todos',
   currentView:  'geral',
@@ -313,10 +330,9 @@ let S = {
 };
 let CHARTS = { top: null, tier: null };
 
-/* ── LOCAL STORAGE ── */
 function saveStateToStorage() {
   if(!S.weekDates[0]) return;
-  const stateToSave = { weekDates: S.weekDates, margin: S.margin, dayData: S.dayData };
+  const stateToSave = { weekDates: S.weekDates, margin: S.margin, dayData: S.dayData, externalLogs: S.externalLogs };
   localStorage.setItem('bw_active_week_state', JSON.stringify(stateToSave));
 }
 
@@ -328,6 +344,7 @@ function loadStateFromStorage() {
       S.weekDates = parsed.weekDates || ['','','','','','',''];
       S.margin = parsed.margin || 30;
       S.dayData = parsed.dayData || [null,null,null,null,null,null];
+      S.externalLogs = parsed.externalLogs || [];
       
       document.getElementById('marginSlider').value = S.margin;
       document.getElementById('marginDisp').textContent = '+' + S.margin + '%';
@@ -336,6 +353,7 @@ function loadStateFromStorage() {
         document.getElementById('weekBadge').textContent = S.weekDates[0] + ' – ' + S.weekDates[5];
       }
       renderDayCards();
+      renderExternalChips();
       renderDashboard();
     } catch(e) { console.error(e); }
   }
@@ -347,7 +365,6 @@ function formatToInputDate(brDate) {
   return `${new Date().getFullYear()}-${parts[1]}-${parts[0]}`;
 }
 
-/* ── WEEK SETUP ── */
 function setThisWeek(){
   document.getElementById('weekStart').value = new Date().toISOString().slice(0,10);
   setWeek();
@@ -366,6 +383,53 @@ function setWeek(){
   }
   document.getElementById('weekBadge').textContent = S.weekDates[0]+' – '+S.weekDates[5];
   saveStateToStorage(); renderDayCards(); renderDashboard();
+}
+
+/* ── MULTIPLE EXTERNAL ROMANEIOS ── */
+function loadMultipleExternals(input) {
+  const files = input.files;
+  if(!files.length) return;
+
+  let loadedCount = 0;
+  for(let i=0; i<files.length; i++) {
+    const file = files[i];
+    const reader = new FileReader();
+    reader.onload = e => {
+      const p = Papa.parse(e.target.result, {header:true, skipEmptyLines:true, dynamicTyping:true});
+      if(p.data.length) {
+        S.externalLogs.push({
+          id: Date.now() + Math.random().toString(36).substr(2, 5),
+          filename: file.name,
+          data: p.data
+        });
+      }
+      loadedCount++;
+      if(loadedCount === files.length) {
+        saveStateToStorage();
+        renderExternalChips();
+        renderDashboard();
+      }
+    };
+    reader.readAsText(file, 'UTF-8');
+  }
+  input.value = '';
+}
+
+function removeExternal(id) {
+  S.externalLogs = S.externalLogs.filter(x => x.id !== id);
+  saveStateToStorage();
+  renderExternalChips();
+  renderDashboard();
+}
+
+function renderExternalChips() {
+  const container = document.getElementById('externalList');
+  container.innerHTML = S.externalLogs.map(x => `
+    <div class="external-chip">
+      <span>🏢 ${x.filename}</span>
+      <button onclick="removeExternal('${x.id}')">✕</button>
+    </div>
+  `).join('');
 }
 
 /* ── CARDS ── */
@@ -416,7 +480,6 @@ function removeDay(evt,idx){
   evt.stopPropagation(); S.dayData[idx]=null; saveStateToStorage(); renderDayCards(); renderDashboard();
 }
 
-/* MARGIN TRIGGER */
 function onMarginChange(v){
   S.margin=parseInt(v); 
   document.getElementById('marginDisp').textContent='+'+v+'%';
@@ -424,7 +487,7 @@ function onMarginChange(v){
   renderDashboard();
 }
 
-/* ── DATA CORE ── */
+/* ── DATA CORE (CONSOLIDAÇÃO COM LOJAS EXTERNAS) ── */
 function isPromo(r){return (parseFloat(r['Valor (R$)']||r['Valor']||0))<0.5;}
 function getTier(a){if(a>=20)return'Alta demanda';if(a>=10)return'Demanda média';if(a>=4)return'Demanda baixa';return'Pontual';}
 function pillClass(t){return{'Alta demanda':'p-alta','Demanda média':'p-media','Demanda baixa':'p-baixa','Pontual':'p-pont','Cortesia/Promo':'p-promo'}[t]||'p-pont';}
@@ -432,24 +495,39 @@ function barColor(t){return{'Alta demanda':'#2a78d6','Demanda média':'#1baf7a',
 function cap(s){return(s||'').toLowerCase().replace(/\b\w/g,c=>c.toUpperCase());}
 
 function processData(){
-  const {dayData,margin}=S;
+  const {dayData, margin, externalLogs}=S;
   const loadedIdx=dayData.map((d,i)=>d?i:null).filter(i=>i!==null);
   S.loadedIdx=loadedIdx; S.nLoaded=loadedIdx.length;
-  if(!loadedIdx.length){S.products=[];return;}
+  
+  // Só bloqueia se não houver NEM dados diários NEM romaneios externos
+  if(!loadedIdx.length && !externalLogs.length){S.products=[];return;}
   
   const blacklist = ITENS_IGNORADOS.map(i => i.trim().toUpperCase());
   const map={}, dayTotals=[0,0,0,0,0,0];
 
+  // 1. Processa Vendas Internas (CSV do Cronograma Diário)
   loadedIdx.forEach(idx=>{
     dayData[idx].forEach(r=>{
       const name=(r['Produto']||'').trim().toUpperCase(); 
-      if(!name) return;
+      if(!name || blacklist.includes(name)) return;
       
-      if(blacklist.includes(name)) return;
-
       const q=parseFloat(r['Qtd']||0), v=parseFloat(r['Valor (R$)']||r['Valor']||0);
-      if(!map[name])map[name]={name,byDay:[0,0,0,0,0,0],totalQtd:0,totalValor:0,promo:isPromo(r)};
+      if(!map[name])map[name]={name,byDay:[0,0,0,0,0,0],externalTotal:0,totalQtd:0,totalValor:0,promo:isPromo(r)};
       map[name].byDay[idx]+=q; map[name].totalQtd+=q; map[name].totalValor+=v;
+    });
+  });
+
+  // 2. Processa Romaneios Externos Modulares (Somados de Forma Absoluta, Sem Margem)
+  externalLogs.forEach(log => {
+    log.data.forEach(r => {
+      const name=(r['Produto']||'').trim().toUpperCase();
+      if(!name || blacklist.includes(name)) return;
+
+      const q=parseFloat(r['Qtd']||r['Quantidade']||0);
+      if(!map[name])map[name]={name,byDay:[0,0,0,0,0,0],externalTotal:0,totalQtd:0,totalValor:0,promo:false};
+      
+      map[name].externalTotal += q;
+      map[name].totalQtd += q; // Soma na visão geral agregada
     });
   });
   
@@ -462,13 +540,13 @@ function processData(){
     let calculatedWeekMeta = [0,0,0,0,0,0];
     for(let i=0;i<6;i++) {
       if(S.dayData[i]) {
-        calculatedWeekMeta[i] = Math.ceil(p.byDay[i] * mult);
+        // Se a visualização for Sábado (índice 5), soma o Romaneio Externo integralmente nele
+        const extContribution = (i === 5) ? p.externalTotal : 0;
+        calculatedWeekMeta[i] = Math.ceil(p.byDay[i] * mult) + extContribution;
       } else {
-        if(i === 5) {
-          calculatedWeekMeta[i] = metaDay * 2;
-        } else {
-          calculatedWeekMeta[i] = metaDay;
-        }
+        // Se não tem CSV pro dia, faz projeção base
+        const extContribution = (i === 5) ? p.externalTotal : 0;
+        calculatedWeekMeta[i] = (i === 5 ? metaDay * 2 : metaDay) + extContribution;
       }
       dayTotals[i] += calculatedWeekMeta[i];
     }
@@ -479,7 +557,7 @@ function processData(){
       daysPresent:dp,
       avgReal,
       metaDay,
-      satMeta: Math.ceil(metaDay * 2),
+      satMeta: Math.ceil(metaDay * 2) + p.externalTotal,
       projWeek:projWeek,
       allocatedDays: calculatedWeekMeta,
       tier:p.promo?'Cortesia/Promo':getTier(avgReal)
@@ -503,7 +581,7 @@ function switchMainView(mode) {
     const dayBtnId = ['btn-view-seg','btn-view-ter','btn-view-qua','btn-view-qui','btn-view-sex','btn-view-sab'][idx];
     document.getElementById(dayBtnId).className = 'tab act-day';
     document.getElementById('graphicsSection').style.display = 'none';
-    document.getElementById('viewIndicator').textContent = `Cronograma Ativo: ${DAY_NAMES[idx]}` + (idx===5?" (Engloba o Domingo)":"");
+    document.getElementById('viewIndicator').textContent = `Cronograma Ativo: ${DAY_NAMES[idx]}` + (idx===5?" (Engloba Domingo + Lojas Externas)":"");
     document.getElementById('printTitle').textContent = `ROMANEIO DE PRODUÇÃO DIÁRIA — ${DAY_NAMES[idx].toUpperCase()}`;
   }
   renderDashboardStructure();
@@ -533,23 +611,23 @@ function renderDashboard(){
   const tc={}; products.forEach(p=>{tc[p.tier]=(tc[p.tier]||0)+1;});
 
   document.getElementById('kpiGrid').innerHTML=`
-    <div class="kpi brew"><div class="kpi-lbl">Vendido Cozinha (Bruto)</div><div class="kpi-val">${tReal.toLocaleString('pt-BR')}</div><div class="kpi-sub">${nLoaded} dias enviados</div></div>
+    <div class="kpi brew"><div class="kpi-lbl">Vendido Cozinha (Bruto)</div><div class="kpi-val">${tReal.toLocaleString('pt-BR')}</div><div class="kpi-sub">${nLoaded} dias + ext. enviados</div></div>
     <div class="kpi blue"><div class="kpi-lbl">Total Proj. Semanal</div><div class="kpi-val">${tProj.toLocaleString('pt-BR')}</div><div class="kpi-sub">Margem de +${margin}%</div></div>
     <div class="kpi green"><div class="kpi-lbl">Meta Diária Padrão</div><div class="kpi-val">${tDia.toLocaleString('pt-BR')}</div><div class="kpi-sub">Com margem aplicada</div></div>
-    <div class="kpi blue"><div class="kpi-lbl">Meta Sábado (Sáb+Dom)</div><div class="kpi-val">${tSat.toLocaleString('pt-BR')}</div><div class="kpi-sub">Com margem aplicada</div></div>
+    <div class="kpi blue"><div class="kpi-lbl">Meta Sábado (Sáb+Dom+Ext)</div><div class="kpi-val">${tSat.toLocaleString('pt-BR')}</div><div class="kpi-sub">Inclui lojas externas</div></div>
     <div class="kpi"><div class="kpi-lbl">Itens de Cozinha</div><div class="kpi-val">${products.length}</div><div class="kpi-sub">Alta saída: ${tc['Alta demanda']||0}</div></div>`;
 
   document.getElementById('disclaimerBox').innerHTML=`
-    <strong>Filtro de Cozinha Central Ativo:</strong> Os ${ITENS_IGNORADOS.length} itens informados de saladas, pratos montados e guarnições de praça foram completamente filtrados para focar o romaneio apenas no seu lote de produção bruta.`;
+    <strong>Filtro de Cozinha Central Ativo:</strong> Os ${ITENS_IGNORADOS.length} itens informados de saladas, pratos montados e guarnições de praça foram filtrados. **Demandas externas consolidadas entram somando direto no lote alvo sem distorcer médias.**`;
 
   document.getElementById('breakdownRow').innerHTML=[0,1,2,3,4,5,6].map(i=>{
     if(i===6)return`<div class="bd-cell dom"><div class="bd-day">Dom</div><div class="bd-date">${S.weekDates[6]||'—'}</div><div class="bd-val">😴</div><div class="bd-proj-lbl">Folga</div></div>`;
     const has=!!S.dayData[i], val=S.dayTotals[i]||0;
     return`<div class="bd-cell${i===5?' sat':''}">
-      <div class="bd-day">${DAY_SHORT[i]}${i===5?' ×2':''}</div>
+      <div class="bd-day">${DAY_SHORT[i]}${i===5?' + LOJAS':''}</div>
       <div class="bd-date">${S.weekDates[i]||'—'}</div>
       <div class="bd-val">${val.toLocaleString('pt-BR')}</div>
-      <div class="bd-proj-lbl" style="color:${has?'var(--media-c)':'var(--brew)'}">${has?'Meta c/ Margem':'Projeção'}</div>
+      <div class="bd-proj-lbl" style="color:${has?'var(--media-c)':'var(--brew)'}">${has?'Meta Final':'Projeção'}</div>
     </div>`;
   }).join('');
 
@@ -574,9 +652,10 @@ function renderDashboardStructure() {
     head.innerHTML = `
       <tr>
         <th>#</th><th>Produto</th><th>Perfil</th>
-        <th class="r">Vendido Real</th>
+        <th class="r">Interno Real</th>
+        <th class="r" style="color: var(--brew)">Lojas Externas</th>
         <th class="r col-day">Meta Diária (+Margem)</th>
-        <th class="r col-sat">Meta Sábado (Sáb+Dom)</th>
+        <th class="r col-sat">Sáb (+Dom + Externo)</th>
         <th class="r col-proj">Total Alvo Semanal</th>
         <th>Volume</th>
       </tr>`;
@@ -587,7 +666,8 @@ function renderDashboardStructure() {
         <td style="color:var(--muted);font-size:11px">${i+1}</td>
         <td style="font-weight:700">${cap(p.name)}</td>
         <td><span class="pill ${pillClass(p.tier)}">${p.tier}</span></td>
-        <td class="r val-real">${p.totalQtd.toLocaleString('pt-BR')}</td>
+        <td class="r val-real">${(p.totalQtd - p.externalTotal).toLocaleString('pt-BR')}</td>
+        <td class="r" style="font-weight:700; color:var(--brew)">${p.externalTotal > 0 ? p.externalTotal.toLocaleString('pt-BR') : '—'}</td>
         <td class="r val-day">${p.metaDay}</td>
         <td class="r val-sat">${p.satMeta.toLocaleString('pt-BR')}</td>
         <td class="r val-proj">${p.projWeek.toLocaleString('pt-BR')}</td>
@@ -595,30 +675,30 @@ function renderDashboardStructure() {
       </tr>`;
     }).join('');
 
-    foot.innerHTML = `<td colspan="3">TOTAL DE PRODUÇÃO CALCULADO</td><td class="r">${filtered.reduce((s,p)=>s+p.totalQtd,0).toLocaleString('pt-BR')}</td><td class="r">${filtered.reduce((s,p)=>s+p.metaDay,0).toLocaleString('pt-BR')}</td><td class="r">${filtered.reduce((s,p)=>s+p.satMeta,0).toLocaleString('pt-BR')}</td><td class="r">${filtered.reduce((s,p)=>s+p.projWeek,0).toLocaleString('pt-BR')}</td><td></td>`;
+    foot.innerHTML = `<td colspan="3">TOTAL DE PRODUÇÃO CALCULADO</td><td class="r">${filtered.reduce((s,p)=>s+(p.totalQtd - p.externalTotal),0).toLocaleString('pt-BR')}</td><td class="r" style="color:var(--brew)">${filtered.reduce((s,p)=>s+p.externalTotal,0).toLocaleString('pt-BR')}</td><td class="r">${filtered.reduce((s,p)=>s+p.metaDay,0).toLocaleString('pt-BR')}</td><td class="r">${filtered.reduce((s,p)=>s+p.satMeta,0).toLocaleString('pt-BR')}</td><td class="r">${filtered.reduce((s,p)=>s+p.projWeek,0).toLocaleString('pt-BR')}</td><td></td>`;
   } else {
     const dayIdx = parseInt(currentView);
     const isSat = dayIdx === 5;
     const hasCSV = !!S.dayData[dayIdx];
     
-    // CORREÇÃO DA HEAD: Confronto visual lado a lado como no arquivo image_ede6f4.png
     head.innerHTML = `
       <tr>
         <th>#</th>
         <th>Produto</th>
         <th>Perfil de Demanda</th>
-        <th class="r">Origem dos Dados</th>
-        <th class="r" style="color:#4B5563;font-weight:700">Venda Real (Fato CSV)</th>
-        <th class="r col-proj" style="background:${isSat?'#185FA5':'#166534'};font-size:12px;font-weight:800">👉 TOTAL A PRODUZIR (Vendido + Margem)</th>
+        <th class="r">Venda Real (Fato CSV)</th>
+        <th class="r" style="color: var(--brew)">Demanda Externa Acumulada</th>
+        <th class="r col-proj" style="background:${isSat?'#185FA5':'#166534'};font-size:12px;font-weight:800">👉 TOTAL A PRODUZIR (Ajustado + Lojas)</th>
       </tr>`;
 
     let displayedProducts = filtered.map(p => {
-      // Pega o que de fato vendeu naquele dia no CSV (ou 0 se o CSV não foi carregado para o dia)
       const realQty = hasCSV ? p.byDay[dayIdx] : 0;
+      const extQty = isSat ? p.externalTotal : 0;
       return { 
         name: p.name, 
         tier: p.tier, 
         realQty: realQty,
+        extQty: extQty,
         qty: p.allocatedDays[dayIdx] 
       };
     }).filter(p => p.qty > 0);
@@ -628,15 +708,16 @@ function renderDashboardStructure() {
         <td style="color:var(--muted);font-size:11px">${i+1}</td>
         <td style="font-weight:800;font-size:14px">${cap(p.name)}</td>
         <td><span class="pill ${pillClass(p.tier)}">${p.tier}</span></td>
-        <td class="r" style="font-size:11px;color:var(--muted)">${hasCSV ? '📈 Ajustado sobre CSV Real' : '🔮 Projetado por Média Histórica'}</td>
-        <td class="r" style="font-weight:700;color:#4B5563;font-size:13px;font-variant-numeric:tabular-nums">${hasCSV ? p.realQty.toLocaleString('pt-BR') + ' un' : '—'}</td>
+        <td class="r" style="font-weight:700;color:#4B5563;font-size:13px">${hasCSV ? p.realQty.toLocaleString('pt-BR') + ' un' : '—'}</td>
+        <td class="r" style="font-weight:700;color:var(--brew);font-size:13px">${p.extQty > 0 ? p.extQty.toLocaleString('pt-BR') + ' un' : '—'}</td>
         <td class="r val-proj" style="font-size:16px;font-weight:800;color:${isSat?'#185FA5':'#166534'}">${p.qty.toLocaleString('pt-BR')} un</td>
       </tr>`;
     }).join('');
 
     foot.innerHTML = `
-      <td colspan="4">TOTAL DO CRONOGRAMA DE HOJE</td>
+      <td colspan="3">TOTAL DO CRONOGRAMA DE HOJE</td>
       <td class="r" style="font-size:13px;color:#fff;background:rgba(255,255,255,0.15)">${hasCSV ? displayedProducts.reduce((s,p)=>s+p.realQty,0).toLocaleString('pt-BR') + ' un' : '—'}</td>
+      <td class="r" style="font-size:13px;color:#fff;background:rgba(255,255,255,0.15)">${displayedProducts.reduce((s,p)=>s+p.extQty,0).toLocaleString('pt-BR')} un</td>
       <td class="r" style="font-size:16px;font-weight:900">${displayedProducts.reduce((s,p)=>s+p.qty,0).toLocaleString('pt-BR')} un</td>`;
   }
 }
@@ -695,10 +776,10 @@ function dlCSV(rows,name){
 function resetAll(){
   if(!confirm('Limpar todos os dados ativos?'))return;
   localStorage.removeItem('bw_active_week_state');
-  S.dayData=[null,null,null,null,null,null]; S.products=[]; S.activeFilter='todos'; S.currentView='geral'; S.weekDates=['','','','','','',''];
+  S.dayData=[null,null,null,null,null,null]; S.externalLogs=[]; S.products=[]; S.activeFilter='todos'; S.currentView='geral'; S.weekDates=['','','','','','',''];
   document.getElementById('weekStart').value=''; document.getElementById('weekBadge').textContent='sem dados';
   if(CHARTS.top){CHARTS.top.destroy();CHARTS.top=null;} if(CHARTS.tier){CHARTS.tier.destroy();CHARTS.tier=null;}
-  renderDayCards(); document.getElementById('dashboard').style.display='none'; document.getElementById('emptyState').style.display='block';
+  renderDayCards(); renderExternalChips(); document.getElementById('dashboard').style.display='none'; document.getElementById('emptyState').style.display='block';
   setThisWeek();
 }
 
