@@ -445,7 +445,6 @@ function processData(){
       const name=(r['Produto']||'').trim().toUpperCase(); 
       if(!name) return;
       
-      // Filtro ativo da Blacklist
       if(blacklist.includes(name)) return;
 
       const q=parseFloat(r['Qtd']||0), v=parseFloat(r['Valor (R$)']||r['Valor']||0);
@@ -521,14 +520,12 @@ function renderDashboard(){
   document.getElementById('dashboard').style.display='block';
   document.getElementById('emptyState').style.display='none';
 
-  // Alerta Crítico
   const criticals = products.filter(p => p.metaDay > 40).slice(0,6);
   if(criticals.length > 0) {
     document.getElementById('criticalPanel').style.display = 'block';
     document.getElementById('criticalList').innerHTML = criticals.map(p => `<div class="critical-item">🔥 ${cap(p.name)} (${p.metaDay}/dia)</div>`).join('');
   } else { document.getElementById('criticalPanel').style.display = 'none'; }
 
-  // KPIs
   const tReal=products.reduce((s,p)=>s+p.totalQtd,0);
   const tProj=products.reduce((s,p)=>s+p.projWeek,0);
   const tDia=products.reduce((s,p)=>s+p.metaDay,0);
@@ -537,15 +534,14 @@ function renderDashboard(){
 
   document.getElementById('kpiGrid').innerHTML=`
     <div class="kpi brew"><div class="kpi-lbl">Vendido Cozinha (Bruto)</div><div class="kpi-val">${tReal.toLocaleString('pt-BR')}</div><div class="kpi-sub">${nLoaded} dias enviados</div></div>
-    <div class="kpi blue"><div class="kpi-lbl">Total Produção Semanal</div><div class="kpi-val">${tProj.toLocaleString('pt-BR')}</div><div class="kpi-sub">Com margem de +${margin}%</div></div>
-    <div class="kpi green"><div class="kpi-lbl">Meta Diária Sugerida</div><div class="kpi-val">${tDia.toLocaleString('pt-BR')}</div><div class="kpi-sub">Com margem de +${margin}%</div></div>
-    <div class="kpi blue"><div class="kpi-lbl">Meta Sábado (Sáb+Dom)</div><div class="kpi-val">${tSat.toLocaleString('pt-BR')}</div><div class="kpi-sub">Com margem de +${margin}%</div></div>
+    <div class="kpi blue"><div class="kpi-lbl">Total Proj. Semanal</div><div class="kpi-val">${tProj.toLocaleString('pt-BR')}</div><div class="kpi-sub">Margem de +${margin}%</div></div>
+    <div class="kpi green"><div class="kpi-lbl">Meta Diária Padrão</div><div class="kpi-val">${tDia.toLocaleString('pt-BR')}</div><div class="kpi-sub">Com margem aplicada</div></div>
+    <div class="kpi blue"><div class="kpi-lbl">Meta Sábado (Sáb+Dom)</div><div class="kpi-val">${tSat.toLocaleString('pt-BR')}</div><div class="kpi-sub">Com margem aplicada</div></div>
     <div class="kpi"><div class="kpi-lbl">Itens de Cozinha</div><div class="kpi-val">${products.length}</div><div class="kpi-sub">Alta saída: ${tc['Alta demanda']||0}</div></div>`;
 
   document.getElementById('disclaimerBox').innerHTML=`
     <strong>Filtro de Cozinha Central Ativo:</strong> Os ${ITENS_IGNORADOS.length} itens informados de saladas, pratos montados e guarnições de praça foram completamente filtrados para focar o romaneio apenas no seu lote de produção bruta.`;
 
-  // Mini cards por dia
   document.getElementById('breakdownRow').innerHTML=[0,1,2,3,4,5,6].map(i=>{
     if(i===6)return`<div class="bd-cell dom"><div class="bd-day">Dom</div><div class="bd-date">${S.weekDates[6]||'—'}</div><div class="bd-val">😴</div><div class="bd-proj-lbl">Folga</div></div>`;
     const has=!!S.dayData[i], val=S.dayTotals[i]||0;
@@ -557,7 +553,6 @@ function renderDashboard(){
     </div>`;
   }).join('');
 
-  // Abas de filtro
   const tDefs=[
     {k:'todos',l:'Todos',c:'act-all'}, {k:'Alta demanda',l:'🔵 Alta demanda',c:'act-alta'},
     {k:'Demanda média',l:'🟢 Demanda média',c:'act-media'}, {k:'Demanda baixa',l:'🟡 Demanda baixa',c:'act-baixa'},
@@ -604,22 +599,45 @@ function renderDashboardStructure() {
   } else {
     const dayIdx = parseInt(currentView);
     const isSat = dayIdx === 5;
-    head.innerHTML = `<tr><th>#</th><th>Produto</th><th>Perfil de Demanda</th><th class="r">Origem dos Dados</th><th class="r col-proj" style="background:${isSat?'#185FA5':'#166534'};font-size:12px">👉 META DE PRODUÇÃO PARA HOJE</th></tr>`;
+    
+    // NOVA HEAD COM A COLUNA COMPARATIVA SOLICITADA
+    head.innerHTML = `
+      <tr>
+        <th>#</th>
+        <th>Produto</th>
+        <th>Perfil de Demanda</th>
+        <th class="r">Origem dos Dados</th>
+        <th class="r" style="color:var(--brew);font-weight:700">Venda Real (Original)</th>
+        <th class="r col-proj" style="background:${isSat?'#185FA5':'#166534'};font-size:12px">👉 META DE PRODUÇÃO PARA HOJE</th>
+      </tr>`;
 
-    let displayedProducts = filtered.map(p => ({ name: p.name, tier: p.tier, qty: p.allocatedDays[dayIdx] })).filter(p => p.qty > 0);
+    const hasCSV = !!S.dayData[dayIdx];
+    let displayedProducts = filtered.map(p => {
+      // Se tiver CSV usa a venda real daquele dia, senão usa a média diária projetada do histórico
+      const realQty = hasCSV ? p.byDay[dayIdx] : Math.round(p.avgReal);
+      return { 
+        name: p.name, 
+        tier: p.tier, 
+        realQty: realQty,
+        qty: p.allocatedDays[dayIdx] 
+      };
+    }).filter(p => p.qty > 0);
 
     body.innerHTML = displayedProducts.map((p,i)=>{
-      const hasCSV = !!S.dayData[dayIdx];
       return `<tr>
         <td style="color:var(--muted);font-size:11px">${i+1}</td>
         <td style="font-weight:800;font-size:14px">${cap(p.name)}</td>
         <td><span class="pill ${pillClass(p.tier)}">${p.tier}</span></td>
-        <td class="r" style="font-size:11px;color:var(--muted)">${hasCSV ? '📈 Ajustado sobre CSV Real' : '🔮 Ajustado por Projeção'}</td>
+        <td class="r" style="font-size:11px;color:var(--muted)">${hasCSV ? '📈 Ajustado sobre CSV Real' : '🔮 Calculado por Projeção'}</td>
+        <td class="r" style="font-weight:700;color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums">${p.realQty.toLocaleString('pt-BR')} un</td>
         <td class="r val-proj" style="font-size:16px;color:${isSat?'#185FA5':'#166534'}">${p.qty.toLocaleString('pt-BR')} un</td>
       </tr>`;
     }).join('');
 
-    foot.innerHTML = `<td colspan="4">TOTAL DO DIA DE HOJE</td><td class="r" style="font-size:16px;font-weight:900">${displayedProducts.reduce((s,p)=>s+p.qty,0).toLocaleString('pt-BR')} un</td>`;
+    foot.innerHTML = `
+      <td colspan="4">TOTAL DO DIA DE HOJE</td>
+      <td class="r" style="font-size:13px;color:#fff;background:rgba(255,255,255,0.15)">${displayedProducts.reduce((s,p)=>s+p.realQty,0).toLocaleString('pt-BR')} un</td>
+      <td class="r" style="font-size:16px;font-weight:900">${displayedProducts.reduce((s,p)=>s+p.qty,0).toLocaleString('pt-BR')} un</td>`;
   }
 }
 
