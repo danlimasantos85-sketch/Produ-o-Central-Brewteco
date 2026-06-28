@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Brewteco — Planejamento Semanal de Produção</title>
-<meta name="description" content="Dashboard de planejamento semanal da cozinha central Brewteco.">
+<meta name="description" content="Dashboard de planejamento semanal da cozinha central Brewteco com cronograma diário ativo.">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
@@ -25,7 +25,6 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--surface2);color:v
 button{cursor:pointer;font-family:inherit}
 input{font-family:inherit}
 
-/* TOPBAR */
 .topbar{background:var(--navy);height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 1.5rem;position:sticky;top:0;z-index:200;box-shadow:0 2px 8px rgba(0,0,0,.2)}
 .topbar-brand{display:flex;align-items:center;gap:8px;color:#fff;font-size:14px;font-weight:700;letter-spacing:.01em}
 .topbar-brand .sep{color:rgba(255,255,255,.3)}
@@ -35,11 +34,10 @@ input{font-family:inherit}
 .btn-topbar{background:rgba(255,255,255,.1);border:0.5px solid rgba(255,255,255,.2);color:rgba(255,255,255,.8);font-size:11px;font-weight:500;padding:4px 12px;border-radius:6px;transition:background .15s}
 .btn-topbar:hover{background:rgba(255,255,255,.18)}
 
-/* LAYOUT */
 .page{max-width:1060px;margin:0 auto;padding:1.5rem}
-.sec-label{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.6rem}
+.sec-label{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.6rem;display:flex;justify-content:between;align-items:center}
+.critical-badge{background:var(--promo-bg);color:var(--promo-c);padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;margin-left:8px}
 
-/* SETUP PANEL */
 .setup-panel{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:1.1rem 1.25rem;margin-bottom:1.25rem;box-shadow:var(--shadow-sm)}
 .setup-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:.75rem}
 .setup-row:last-child{margin-bottom:0}
@@ -55,7 +53,6 @@ input[type=date]:focus{border-color:var(--brew)}
 input[type=range]{width:130px;accent-color:var(--brew)}
 .margin-info{font-size:11px;color:var(--muted);line-height:1.5}
 
-/* DAY CARDS */
 .days-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:1.25rem}
 .day-card{background:var(--surface);border:1.5px dashed var(--border-md);border-radius:var(--radius-lg);padding:.75rem .6rem;text-align:center;cursor:pointer;position:relative;transition:border-color .15s,background .15s;min-height:122px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
 .day-card:not(.locked):hover{border-color:var(--brew);background:var(--foam)}
@@ -77,7 +74,6 @@ input[type=range]{width:130px;accent-color:var(--brew)}
 .day-card.loaded .dc-remove{display:block}
 .dc-remove:hover{background:rgba(200,0,0,.18);color:#c00}
 
-/* KPI */
 .kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:1.25rem}
 .kpi{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:.85rem 1rem;box-shadow:var(--shadow-sm)}
 .kpi-lbl{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
@@ -87,11 +83,14 @@ input[type=range]{width:130px;accent-color:var(--brew)}
 .kpi.blue .kpi-val{color:var(--alta-c)}
 .kpi.green .kpi-val{color:var(--media-c)}
 
-/* DISCLAIMER */
 .disclaimer{background:var(--foam);border:0.5px solid #E2C97A;border-left:4px solid var(--brew);border-radius:0 var(--radius) var(--radius) 0;padding:.7rem 1rem;font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:1.25rem}
 .disclaimer strong{color:var(--navy)}
 
-/* BREAKDOWN */
+.critical-panel{background:#FFF5F5;border:0.5px solid #FEB2B2;border-radius:var(--radius-lg);padding:1rem;margin-bottom:1.25rem;display:none}
+.critical-title{font-size:12px;font-weight:700;color:#C53030;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.5rem;display:flex;align-items:center;gap:6px}
+.critical-list{display:flex;gap:8px;flex-wrap:wrap}
+.critical-item{background:#fff;border:1px solid #FED7D7;padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;color:#9B2C2C;box-shadow:var(--shadow-sm)}
+
 .breakdown-row{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:1.25rem}
 .bd-cell{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:.5rem .6rem;text-align:center;box-shadow:var(--shadow-sm)}
 .bd-cell.sat{border-color:var(--alta-bdr);background:var(--alta-bg)}
@@ -103,7 +102,6 @@ input[type=range]{width:130px;accent-color:var(--brew)}
 .bd-proj-lbl{font-size:10px;color:var(--brew);font-weight:600}
 .bd-tag{font-size:10px;color:var(--alta-c);font-weight:600}
 
-/* CHARTS */
 .chart-row{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:1.25rem}
 .chart-card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.25rem;box-shadow:var(--shadow-sm)}
 .chart-card h3{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.75rem}
@@ -111,9 +109,8 @@ input[type=range]{width:130px;accent-color:var(--brew)}
 .leg-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)}
 .leg-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
 
-/* TABS */
 .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:.75rem}
-.tab{font-size:11px;font-weight:600;padding:4px 12px;border-radius:99px;border:1.5px solid var(--border-md);background:var(--surface);color:var(--muted);transition:all .12s}
+.tab{font-size:11px;font-weight:600;padding:5px 14px;border-radius:99px;border:1.5px solid var(--border-md);background:var(--surface);color:var(--muted);transition:all .12s}
 .tab:hover{border-color:var(--navy);color:var(--navy)}
 .tab.act-all{background:var(--navy);color:#fff;border-color:var(--navy)}
 .tab.act-alta{background:var(--alta-bg);color:var(--alta-c);border-color:var(--alta-c)}
@@ -121,8 +118,8 @@ input[type=range]{width:130px;accent-color:var(--brew)}
 .tab.act-baixa{background:var(--baixa-bg);color:var(--baixa-c);border-color:var(--baixa-c)}
 .tab.act-pont{background:var(--pont-bg);color:var(--pont-c);border-color:var(--pont-bdr)}
 .tab.act-promo{background:var(--promo-bg);color:var(--promo-c);border-color:var(--promo-c)}
+.tab.act-day{background:var(--brew);color:#fff;border-color:var(--brew)}
 
-/* TABLE */
 .table-wrap{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);overflow:hidden;margin-bottom:1.25rem}
 table{width:100%;border-collapse:collapse}
 thead th{background:var(--navy);color:#fff;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:9px 10px;text-align:left;white-space:nowrap}
@@ -150,21 +147,9 @@ tbody td.r{text-align:right;font-variant-numeric:tabular-nums}
 tfoot td{background:var(--navy);color:#fff;font-size:12px;font-weight:700;padding:9px 10px}
 tfoot td.r{text-align:right}
 
-/* PANELS */
 .panel{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.25rem;box-shadow:var(--shadow-sm);margin-bottom:1.25rem}
 .panel-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem}
-.hist-item{display:flex;align-items:center;gap:10px;padding:7px 10px;background:var(--surface2);border-radius:6px;font-size:12px;margin-bottom:5px}
-.hist-dot{width:8px;height:8px;border-radius:50%;background:var(--brew);flex-shrink:0}
-.hist-week{font-weight:700;color:var(--navy);white-space:nowrap}
-.hist-meta{color:var(--muted);flex:1}
-.hist-stat{font-size:11px;font-weight:600;color:var(--media-c);white-space:nowrap}
 
-/* EMPTY */
-.empty-state{text-align:center;padding:3.5rem 2rem;color:var(--muted)}
-.empty-state .big{font-size:3rem;margin-bottom:.75rem}
-.empty-state p{font-size:13px;max-width:380px;margin:0 auto;line-height:1.7}
-
-/* RESPONSIVE */
 @media(max-width:780px){
   .days-grid{grid-template-columns:repeat(4,1fr)}
   .kpi-grid{grid-template-columns:repeat(2,1fr)}
@@ -175,17 +160,22 @@ tfoot td.r{text-align:right}
   tfoot td:nth-child(n+8){display:none}
 }
 
-/* PRINT */
 @media print{
-  .topbar,.setup-panel,.days-grid,.tabs,.chart-row,.panel,.btn,button{display:none!important}
+  .topbar,.setup-panel,.days-grid,.tabs,.chart-row,.panel,.btn,button,.critical-panel,.disclaimer{display:none!important}
   .page{padding:0;max-width:100%}
-  body{background:#fff;font-size:11px}
-  .kpi-grid{grid-template-columns:repeat(5,1fr);gap:6px}
-  .kpi{border:1px solid #ccc;padding:.5rem}
-  .table-wrap{box-shadow:none;border:1px solid #ccc}
-  thead th{background:var(--navy)!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .breakdown-row{grid-template-columns:repeat(7,1fr)}
+  body{background:#fff;color:#000;font-size:14px}
+  .kpi-grid{grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:2rem}
+  .kpi{border:1px solid #000;padding:.5rem;box-shadow:none}
+  .kpi-val{font-size:24px!important;font-weight:800!important}
+  .table-wrap{box-shadow:none;border:1px solid #000;overflow:visible}
+  table{width:100%!important}
+  thead th{background:var(--navy)!important;color:#fff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;font-size:11px;padding:10px 6px}
+  tbody td{font-size:15px!important;padding:12px 8px!important;border-bottom:1px solid #000!important;font-weight:700!important}
+  .pill{border:1px solid #000;background:#fff!important;color:#000!important}
+  .val-day,.val-proj,.val-sat{font-size:16px!important;color:#000!important;font-weight:900!important}
+  .print-title{display:block!important;font-size:22px;font-weight:800;text-transform:uppercase;margin-bottom:1.5rem;border-bottom:3px solid #000;padding-bottom:5px}
 }
+.print-title{display:none}
 </style>
 </head>
 <body>
@@ -200,11 +190,12 @@ tfoot td.r{text-align:right}
     <button class="btn-topbar" onclick="exportCSV()">⬇ CSV Completo</button>
     <button class="btn-topbar" onclick="exportRomaneio()">⬇ Romaneio</button>
     <button class="btn-topbar" onclick="window.print()">🖨 Imprimir</button>
-    <button class="btn-topbar" onclick="resetAll()">✕ Limpar</button>
+    <button class="btn-topbar" onclick="resetAll()">✕ Limpar Tudo</button>
   </div>
 </nav>
 
 <div class="page">
+  <div class="print-title" id="printTitle">ROMANEIO DE PRODUÇÃO — BREWTECO</div>
 
   <!-- SETUP -->
   <div class="setup-panel">
@@ -213,104 +204,91 @@ tfoot td.r{text-align:right}
       <input type="date" id="weekStart" title="Selecione qualquer dia da semana">
       <button class="btn btn-brew" onclick="setWeek()">Definir semana</button>
       <button class="btn btn-ghost" onclick="setThisWeek()">Esta semana</button>
-      <span style="font-size:11px;color:var(--muted)">A semana sempre inicia na segunda-feira.</span>
     </div>
     <div class="setup-row">
       <span class="setup-label">Margem de segurança:</span>
       <input type="range" min="0" max="80" value="30" step="5" id="marginSlider" oninput="onMarginChange(this.value)">
       <span class="margin-val-display" id="marginDisp">+30%</span>
       <span class="margin-info">
-        Aplicada sobre a média dos dias com dados reais.<br>
-        Dias futuros = média × (1 + margem). Sábado = meta diária × 2 (cobre domingo).
+        Calcula as metas com segurança. <strong>Sábado engloba o domingo automaticamente</strong>.
       </span>
     </div>
   </div>
 
   <!-- DAY CARDS -->
-  <div class="sec-label">Upload por dia — arraste o CSV ou clique</div>
+  <div class="sec-label">Upload de Vendas por Dia</div>
   <div class="days-grid" id="daysGrid"></div>
 
-  <!-- DASHBOARD -->
+  <!-- CRITICAL PRODUCTS -->
+  <div class="critical-panel" id="criticalPanel">
+    <div class="critical-title">⚠️ ALERTA DE VOLUME CRÍTICO (Meta Diária Real > 40 un)</div>
+    <div class="critical-list" id="criticalList"></div>
+  </div>
+
+  <!-- DASHBOARD CONTROLS -->
   <div id="dashboard" style="display:none">
     <div class="kpi-grid" id="kpiGrid"></div>
     <div class="disclaimer" id="disclaimerBox"></div>
 
-    <div class="sec-label">Volume por dia da semana</div>
+    <div class="sec-label">Resumo de Saídas Calculadas</div>
     <div class="breakdown-row" id="breakdownRow"></div>
 
-    <div class="chart-row">
-      <div class="chart-card">
-        <div class="legend-row">
-          <span class="leg-item"><span class="leg-dot" style="background:#C8C3BA"></span>Real acumulado</span>
-          <span class="leg-item"><span class="leg-dot" style="background:#2a78d6"></span>Projeção + margem</span>
-        </div>
-        <h3>Top 15 — projeção semanal com margem</h3>
-        <div style="position:relative;height:260px">
-          <canvas id="chartTop" role="img" aria-label="Top 15 produtos por projeção semanal">Top 15 produtos projetados para a semana.</canvas>
-        </div>
-      </div>
-      <div class="chart-card">
-        <h3>Distribuição por perfil de demanda</h3>
-        <div style="position:relative;height:200px">
-          <canvas id="chartTier" role="img" aria-label="Distribuição por perfil de demanda">Distribuição por perfil.</canvas>
-        </div>
-        <div id="tierLegend" style="margin-top:.5rem"></div>
-      </div>
+    <!-- MAIN VIEW TOGGLES -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.6rem">
+      <div class="sec-label" style="margin:0">Filtros e Cronogramas de Produção Ativos</div>
+      <div style="font-size:11px;color:var(--brew);font-weight:700" id="viewIndicator">Exibindo: Visão Geral Semanal</div>
+    </div>
+    
+    <div class="tabs" id="viewTabs" style="margin-bottom:1rem;background:var(--surface3);padding:6px;border-radius:8px">
+      <button class="tab act-all" id="btn-view-geral" onclick="switchMainView('geral')">📋 Visão Geral Semanal</button>
+      <button class="tab" id="btn-view-seg" onclick="switchMainView('0')">🗓️ Seg</button>
+      <button class="tab" id="btn-view-ter" onclick="switchMainView('1')">🗓️ Ter</button>
+      <button class="tab" id="btn-view-qua" onclick="switchMainView('2')">🗓️ Qua</button>
+      <button class="tab" id="btn-view-qui" onclick="switchMainView('3')">🗓️ Qui</button>
+      <button class="tab" id="btn-view-sex" onclick="switchMainView('4')">🗓️ Sex</button>
+      <button class="tab" id="btn-view-sab" onclick="switchMainView('5')">🔥 Sáb (+ Dom)</button>
     </div>
 
-    <div class="sec-label">Planejamento completo por produto</div>
     <div class="tabs" id="tierTabs"></div>
+
+    <!-- MAIN DATA TABLE -->
     <div class="table-wrap">
       <table id="mainTable">
-        <thead>
-          <tr>
-            <th>#</th><th>Produto</th><th>Perfil</th>
-            <th class="r">Real acum.</th>
-            <th class="r">Dias</th>
-            <th class="r">Média/dia</th>
-            <th class="r col-day">Meta diária</th>
-            <th class="r col-proj" id="thProj">Projeção semana (+30%)</th>
-            <th class="r col-sat">Meta sábado (×2)</th>
-            <th></th>
-          </tr>
-        </thead>
+        <thead id="tableHead"></thead>
         <tbody id="prodBody"></tbody>
         <tfoot><tr id="totRow"></tr></tfoot>
       </table>
     </div>
 
-    <!-- EXPORT PANEL -->
-    <div class="panel">
-      <div class="panel-hdr">
-        <span class="sec-label" style="margin:0">Exportar &amp; Imprimir</span>
+    <!-- GRAPHICS (Only shown in General View) -->
+    <div id="graphicsSection">
+      <div class="chart-row">
+        <div class="chart-card">
+          <div class="legend-row">
+            <span class="leg-item"><span class="leg-dot" style="background:#C8C3BA"></span>Real acumulado</span>
+            <span class="leg-item"><span class="leg-dot" style="background:#2a78d6"></span>Projeção total</span>
+          </div>
+          <h3>Top 15 — Projeção Semanal com Margem</h3>
+          <div style="position:relative;height:260px">
+            <canvas id="chartTop">Top 15 produtos projetados.</canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <h3>Perfil de Demanda</h3>
+          <div style="position:relative;height:200px">
+            <canvas id="chartTier">Distribuição por perfil.</canvas>
+          </div>
+          <div id="tierLegend" style="margin-top:.5rem"></div>
+        </div>
       </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:.6rem">
-        <button class="btn btn-brew" onclick="exportCSV()">⬇ CSV Completo</button>
-        <button class="btn btn-blue" onclick="exportRomaneio()">⬇ CSV Romaneio (só metas)</button>
-        <button class="btn btn-ghost" onclick="window.print()">🖨 Imprimir romaneio</button>
-      </div>
-      <p style="font-size:11px;color:var(--muted)">
-        <strong>CSV Completo</strong> — todas as colunas (real, dias, média, metas, projeção).<br>
-        <strong>Romaneio</strong> — versão enxuta: Produto | Perfil | Meta Diária | Meta Sábado | Projeção Semana.
-      </p>
     </div>
   </div>
 
   <!-- EMPTY STATE -->
   <div class="empty-state" id="emptyState">
     <div class="big">🍺</div>
-    <p>Defina a semana e faça upload do CSV de cada dia.<br>Você pode carregar de 1 a 6 dias — a projeção se ajusta automaticamente conforme os dados chegam.</p>
+    <p>Defina a semana e faça upload do CSV de cada dia.<br>Os dados ficam salvos automaticamente no seu navegador.</p>
   </div>
-
-  <!-- HISTORY -->
-  <div class="panel" id="historyPanel" style="display:none">
-    <div class="panel-hdr">
-      <span class="sec-label" style="margin:0">Histórico de semanas registradas</span>
-      <button class="btn btn-ghost" style="font-size:11px;padding:3px 10px" onclick="clearHistory()">Limpar histórico</button>
-    </div>
-    <div id="histList"></div>
-  </div>
-
 </div>
 
 <script>
@@ -322,20 +300,62 @@ let S = {
   dayData:      [null,null,null,null,null,null],
   margin:       30,
   activeFilter: 'todos',
+  currentView:  'geral', // 'geral' ou índice de '0' a '5'
   products:     [],
   dayTotals:    [0,0,0,0,0,0],
   nLoaded:      0,
   loadedIdx:    [],
-  history:      JSON.parse(localStorage.getItem('bw_hist2') || '[]'),
 };
 let CHARTS = { top: null, tier: null };
 
-/* ── WEEK ── */
+/* ── LOCAL STORAGE (MEMORY) ── */
+function saveStateToStorage() {
+  if(!S.weekDates[0]) return;
+  const stateToSave = {
+    weekDates: S.weekDates,
+    margin: S.margin,
+    dayData: S.dayData
+  };
+  localStorage.setItem('bw_active_week_state', JSON.stringify(stateToSave));
+}
+
+function loadStateFromStorage() {
+  const saved = localStorage.getItem('bw_active_week_state');
+  if(saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      S.weekDates = parsed.weekDates || ['','','','','','',''];
+      S.margin = parsed.margin || 30;
+      S.dayData = parsed.dayData || [null,null,null,null,null,null];
+      
+      document.getElementById('marginSlider').value = S.margin;
+      document.getElementById('marginDisp').textContent = '+' + S.margin + '%';
+      if(S.weekDates[0]) {
+        document.getElementById('weekStart').value = formatToInputDate(S.weekDates[0]);
+        document.getElementById('weekBadge').textContent = S.weekDates[0] + ' – ' + S.weekDates[5];
+      }
+      renderDayCards();
+      renderDashboard();
+    } catch(e) {
+      console.error("Erro ao recuperar memória local", e);
+    }
+  }
+}
+
+function formatToInputDate(brDate) {
+  if(!brDate) return '';
+  const parts = brDate.split('/');
+  const year = new Date().getFullYear();
+  return `${year}-${parts[1]}-${parts[0]}`;
+}
+
+/* ── WEEK SETUP ── */
 function setThisWeek(){
   const now = new Date();
   document.getElementById('weekStart').value = now.toISOString().slice(0,10);
   setWeek();
 }
+
 function setWeek(){
   const v = document.getElementById('weekStart').value;
   if(!v){ alert('Selecione uma data.'); return; }
@@ -349,11 +369,12 @@ function setWeek(){
     S.weekDates[i]=d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
   }
   document.getElementById('weekBadge').textContent = S.weekDates[0]+' – '+S.weekDates[5];
+  saveStateToStorage();
   renderDayCards();
   renderDashboard();
 }
 
-/* ── DAY CARDS ── */
+/* ── CARDS ── */
 function renderDayCards(){
   const grid = document.getElementById('daysGrid');
   grid.innerHTML='';
@@ -388,6 +409,7 @@ function loadDay(idx,input){
     const p=Papa.parse(e.target.result,{header:true,skipEmptyLines:true,dynamicTyping:true});
     if(!p.data.length){alert('CSV vazio ou inválido.');return;}
     S.dayData[idx]=p.data;
+    saveStateToStorage();
     renderDayCards();
     renderDashboard();
   };
@@ -397,19 +419,19 @@ function loadDay(idx,input){
 function removeDay(evt,idx){
   evt.stopPropagation();
   S.dayData[idx]=null;
+  saveStateToStorage();
   renderDayCards();
   renderDashboard();
 }
 
-/* ── MARGIN ── */
 function onMarginChange(v){
   S.margin=parseInt(v);
   document.getElementById('marginDisp').textContent='+'+v+'%';
-  document.getElementById('thProj').textContent='Projeção semana (+'+v+'%)';
+  saveStateToStorage();
   renderDashboard();
 }
 
-/* ── PROCESS ── */
+/* ── CALCULATIONS (INDEPENDENT PAST DAYS) ── */
 function isPromo(r){return (parseFloat(r['Valor (R$)']||r['Valor']||0))<0.5;}
 function getTier(a){if(a>=20)return'Alta demanda';if(a>=10)return'Demanda média';if(a>=4)return'Demanda baixa';return'Pontual';}
 function pillClass(t){return{'Alta demanda':'p-alta','Demanda média':'p-media','Demanda baixa':'p-baixa','Pontual':'p-pont','Cortesia/Promo':'p-promo'}[t]||'p-pont';}
@@ -421,6 +443,7 @@ function processData(){
   const loadedIdx=dayData.map((d,i)=>d?i:null).filter(i=>i!==null);
   S.loadedIdx=loadedIdx; S.nLoaded=loadedIdx.length;
   if(!loadedIdx.length){S.products=[];return;}
+  
   const map={}, dayTotals=[0,0,0,0,0,0];
   loadedIdx.forEach(idx=>{
     dayData[idx].forEach(r=>{
@@ -434,18 +457,68 @@ function processData(){
   });
   S.dayTotals=dayTotals;
   const mult=1+margin/100;
+  
   S.products=Object.values(map).map(p=>{
     const dp=loadedIdx.filter(i=>p.byDay[i]>0).length||1;
     const avgReal=p.totalQtd/dp;
     const metaDay=Math.ceil(avgReal*mult);
-    return{...p,daysPresent:dp,avgReal,metaDay,projWeek:Math.ceil(avgReal*6*mult),satMeta:metaDay*2,tier:p.promo?'Cortesia/Promo':getTier(avgReal)};
+    
+    // Aloca as metas calculadas dia a dia sem mexer retroativamente na quantidade real dos dias enviados
+    let calculatedWeekMeta = [0,0,0,0,0,0];
+    for(let i=0;i<6;i++) {
+      if(S.dayData[i]) {
+        calculatedWeekMeta[i] = p.byDay[i]; // Dia passado fixado com o valor real do CSV
+      } else {
+        if(i === 5) {
+          calculatedWeekMeta[i] = metaDay * 2; // Sábado futuro projeta sábado + domingo
+        } else {
+          calculatedWeekMeta[i] = metaDay; // Dias da semana futuros comuns
+        }
+      }
+    }
+    
+    const projWeek = calculatedWeekMeta.reduce((a,b)=>a+b,0);
+    return{
+      ...p,
+      daysPresent:dp,
+      avgReal,
+      metaDay,
+      satMeta:metaDay*2,
+      projWeek:projWeek,
+      allocatedDays: calculatedWeekMeta,
+      tier:p.promo?'Cortesia/Promo':getTier(avgReal)
+    };
   }).sort((a,b)=>b.projWeek-a.projWeek);
 }
 
-/* ── RENDER ── */
+/* ── SWITCH VIEW MODE ── */
+function switchMainView(mode) {
+  S.currentView = mode;
+  // Atualiza botões ativos das abas superiores
+  document.getElementById('viewTabs').querySelectorAll('.tab').forEach(b => b.className = 'tab');
+  if(mode === 'geral') {
+    document.getElementById('btn-view-geral').className = 'tab act-all';
+    document.getElementById('graphicsSection').style.display = 'block';
+    document.getElementById('viewIndicator').textContent = 'Exibindo: Visão Geral Semanal';
+    document.getElementById('printTitle').textContent = 'ROMANEIO DE PRODUÇÃO — PLANO GERAL DA SEMANA';
+  } else {
+    const idx = parseInt(mode);
+    const dayBtnId = ['btn-view-seg','btn-view-ter','btn-view-qua','btn-view-qui','btn-view-sex','btn-view-sab'][idx];
+    document.getElementById(dayBtnId).className = 'tab act-day';
+    document.getElementById('graphicsSection').style.display = 'none';
+    
+    let label = `Cronograma Ativo: ${DAY_NAMES[idx]}`;
+    if(idx === 5) label += " (Engloba a demanda de Domingo)";
+    document.getElementById('viewIndicator').textContent = label;
+    document.getElementById('printTitle').textContent = `ROMANEIO DE PRODUÇÃO DIÁRIA — PRODUCÃO PARA ${DAY_NAMES[idx].toUpperCase()}`;
+  }
+  renderDashboardStructure();
+}
+
+/* ── REDRAW DASHBOARD ── */
 function renderDashboard(){
   processData();
-  const {products,dayTotals,nLoaded,loadedIdx,margin,weekDates}=S;
+  const {products,margin,nLoaded} = S;
   if(!products.length){
     document.getElementById('dashboard').style.display='none';
     document.getElementById('emptyState').style.display='block';
@@ -454,44 +527,48 @@ function renderDashboard(){
   document.getElementById('dashboard').style.display='block';
   document.getElementById('emptyState').style.display='none';
 
+  // Alerta Crítico
+  const criticals = products.filter(p => p.metaDay > 40).slice(0,6);
+  if(criticals.length > 0) {
+    document.getElementById('criticalPanel').style.display = 'block';
+    document.getElementById('criticalList').innerHTML = criticals.map(p => `
+      <div class="critical-item">🔥 ${cap(p.name)} (${p.metaDay}/dia)</div>
+    `).join('');
+  } else {
+    document.getElementById('criticalPanel').style.display = 'none';
+  }
+
+  // KPIs superiores
   const tReal=products.reduce((s,p)=>s+p.totalQtd,0);
   const tProj=products.reduce((s,p)=>s+p.projWeek,0);
   const tDia=products.reduce((s,p)=>s+p.metaDay,0);
   const tSat=products.reduce((s,p)=>s+p.satMeta,0);
-  const nFut=6-nLoaded;
-  const avgDia=tReal/nLoaded;
-  const tc={};
-  products.forEach(p=>{tc[p.tier]=(tc[p.tier]||0)+1;});
+  const tc={}; products.forEach(p=>{tc[p.tier]=(tc[p.tier]||0)+1;});
 
   document.getElementById('kpiGrid').innerHTML=`
-    <div class="kpi brew"><div class="kpi-lbl">Real acumulado</div><div class="kpi-val">${tReal.toLocaleString('pt-BR')}</div><div class="kpi-sub">${nLoaded} de 6 dias com dados</div></div>
-    <div class="kpi blue"><div class="kpi-lbl">Projeção semana (+${margin}%)</div><div class="kpi-val">${tProj.toLocaleString('pt-BR')}</div><div class="kpi-sub">${nFut} dia(s) ainda projetado(s)</div></div>
-    <div class="kpi green"><div class="kpi-lbl">Meta diária (+${margin}%)</div><div class="kpi-val">${tDia.toLocaleString('pt-BR')}</div><div class="kpi-sub">itens/dia útil (seg–sex)</div></div>
-    <div class="kpi blue"><div class="kpi-lbl">Meta sábado (×2)</div><div class="kpi-val">${tSat.toLocaleString('pt-BR')}</div><div class="kpi-sub">cobre sábado + domingo</div></div>
-    <div class="kpi"><div class="kpi-lbl">Produtos ativos</div><div class="kpi-val">${products.length}</div><div class="kpi-sub">alta: ${tc['Alta demanda']||0} · média: ${tc['Demanda média']||0}</div></div>`;
+    <div class="kpi brew"><div class="kpi-lbl">Real acumulado</div><div class="kpi-val">${tReal.toLocaleString('pt-BR')}</div><div class="kpi-sub">${nLoaded} dias enviados</div></div>
+    <div class="kpi blue"><div class="kpi-lbl">Total projetado semana</div><div class="kpi-val">${tProj.toLocaleString('pt-BR')}</div><div class="kpi-sub">Incluindo margem de +${margin}%</div></div>
+    <div class="kpi green"><div class="kpi-lbl">Meta diária base</div><div class="kpi-val">${tDia.toLocaleString('pt-BR')}</div><div class="kpi-sub">Unidades por dia útil</div></div>
+    <div class="kpi blue"><div class="kpi-lbl">Meta sábado (×2)</div><div class="kpi-val">${tSat.toLocaleString('pt-BR')}</div><div class="kpi-sub">Cobre sábado + domingo</div></div>
+    <div class="kpi"><div class="kpi-lbl">Itens cadastrados</div><div class="kpi-val">${products.length}</div><div class="kpi-sub">Alta saída: ${tc['Alta demanda']||0}</div></div>`;
 
-  const futStr=DAY_NAMES.slice(nLoaded,6).join(', ')||'—';
   document.getElementById('disclaimerBox').innerHTML=`
-    <strong>Como a projeção funciona:</strong>
-    A média diária real usa apenas os <strong>${nLoaded} dia(s) com dados</strong> (${loadedIdx.map(i=>DAY_SHORT[i]).join(', ')}).
-    Os <strong>${nFut} dia(s) futuros</strong> (${futStr}) são estimados com média + <strong>${margin}% de margem de segurança</strong>.
-    A coluna <strong>Meta sábado</strong> multiplica a meta diária por 2 — sábado cobre o domingo (folga da equipe).
-    Ajuste o slider para calibrar a margem conforme a demanda esperada do período.`;
+    <strong>Inteligência de Produção Ativa:</strong> O sistema mantém os valores reais dos dias passados intactos. Os dias futuros são estimados de forma assertiva com base na margem selecionada. <strong>No cronograma de sábado, o volume necessário para cobrir o domingo de folga já está totalmente somado</strong> no plano de ataque.`;
 
+  // Mini cards por dia
   document.getElementById('breakdownRow').innerHTML=[0,1,2,3,4,5,6].map(i=>{
     const sat=i===5, dom=i===6, has=!!S.dayData[i];
-    const val=dayTotals[i]||0, proj=Math.round(avgDia*(1+margin/100));
-    if(dom)return`<div class="bd-cell dom"><div class="bd-day">Dom</div><div class="bd-date">${weekDates[6]||'—'}</div><div class="bd-val" style="font-size:20px">😴</div><div class="bd-proj-lbl">folga</div></div>`;
+    const val=S.dayTotals[i]||0, avgDia=tReal/(nLoaded||1), proj=Math.round(avgDia*(1+margin/100));
+    if(dom)return`<div class="bd-cell dom"><div class="bd-day">Dom</div><div class="bd-date">${S.weekDates[6]||'—'}</div><div class="bd-val">😴</div><div class="bd-proj-lbl">Folga</div></div>`;
     return`<div class="bd-cell${sat?' sat':''}">
       <div class="bd-day">${DAY_SHORT[i]}${sat?' ×2':''}</div>
-      <div class="bd-date">${weekDates[i]||'—'}</div>
+      <div class="bd-date">${S.weekDates[i]||'—'}</div>
       <div class="bd-val ${has?'':'proj'}">${has?val.toLocaleString('pt-BR'):'~'+proj.toLocaleString('pt-BR')}</div>
       ${!has?`<div class="bd-proj-lbl">projeção</div>`:''}
-      ${sat&&has?`<div class="bd-tag">×2 = ${(val*2).toLocaleString('pt-BR')}</div>`:''}
-      ${sat&&!has?`<div class="bd-tag">×2 = ~${(proj*2).toLocaleString('pt-BR')}</div>`:''}
     </div>`;
   }).join('');
 
+  // Abas de categoria
   const tDefs=[
     {k:'todos',l:'Todos',c:'act-all'},
     {k:'Alta demanda',l:'🔵 Alta demanda',c:'act-alta'},
@@ -508,44 +585,93 @@ function renderDashboard(){
       return`<button class="tab${isAct?' '+d.c:''}" onclick="setFilter('${d.k}')">${d.l} (${cnt})</button>`;
     }).join('');
 
-  renderTable();
+  renderDashboardStructure();
   renderCharts();
-  saveHistory();
-  renderHistory();
 }
 
-function renderTable(){
-  const {products,activeFilter,margin}=S;
-  const filtered=activeFilter==='todos'?products:products.filter(p=>p.tier===activeFilter);
-  const maxP=products[0]?.projWeek||1;
-  document.getElementById('prodBody').innerHTML=filtered.map((p,i)=>{
-    const pct=Math.round((p.projWeek/maxP)*100), bc=barColor(p.tier);
-    return`<tr>
-      <td style="color:var(--muted);font-size:11px">${i+1}</td>
-      <td style="font-weight:500">${cap(p.name)}</td>
-      <td><span class="pill ${pillClass(p.tier)}">${p.tier}</span></td>
-      <td class="r val-real">${p.totalQtd.toLocaleString('pt-BR')}</td>
-      <td class="r" style="color:var(--muted);font-size:11px">${p.daysPresent}</td>
-      <td class="r" style="color:var(--muted);font-size:11px">${p.avgReal.toFixed(1)}</td>
-      <td class="r val-day">${p.metaDay}</td>
-      <td class="r val-proj">${p.projWeek.toLocaleString('pt-BR')}</td>
-      <td class="r val-sat">${p.satMeta.toLocaleString('pt-BR')}</td>
-      <td><div class="bar-mini"><div class="bar-fill" style="width:${pct}%;background:${bc}"></div></div></td>
-    </tr>`;
-  }).join('');
-  const fr=filtered.reduce((s,p)=>s+p.totalQtd,0);
-  const fd=filtered.reduce((s,p)=>s+p.metaDay,0);
-  const fp=filtered.reduce((s,p)=>s+p.projWeek,0);
-  const fs=filtered.reduce((s,p)=>s+p.satMeta,0);
-  document.getElementById('totRow').innerHTML=`
-    <td colspan="3">TOTAL (${filtered.length} produtos)</td>
-    <td class="r">${fr.toLocaleString('pt-BR')}</td><td class="r">—</td><td class="r">—</td>
-    <td class="r">${fd.toLocaleString('pt-BR')}</td>
-    <td class="r">${fp.toLocaleString('pt-BR')}</td>
-    <td class="r">${fs.toLocaleString('pt-BR')}</td><td></td>`;
+function renderDashboardStructure() {
+  const {products,activeFilter,currentView} = S;
+  const filtered = activeFilter==='todos'?products:products.filter(p=>p.tier===activeFilter);
+  const head = document.getElementById('tableHead');
+  const body = document.getElementById('prodBody');
+  const foot = document.getElementById('totRow');
+
+  if(currentView === 'geral') {
+    // Tabela Visão Geral Completa
+    head.innerHTML = `
+      <tr>
+        <th>#</th><th>Produto</th><th>Perfil</th>
+        <th class="r">Real acum.</th>
+        <th class="r col-day">Meta Diária</th>
+        <th class="r col-sat">Meta Sábado (×2)</th>
+        <th class="r col-proj">Projeção Semanal Total</th>
+        <th>Visual</th>
+      </tr>`;
+
+    const maxP = products[0]?.projWeek || 1;
+    body.innerHTML = filtered.map((p,i)=>{
+      const pct=Math.round((p.projWeek/maxP)*100), bc=barColor(p.tier);
+      return `<tr>
+        <td style="color:var(--muted);font-size:11px">${i+1}</td>
+        <td style="font-weight:700">${cap(p.name)}</td>
+        <td><span class="pill ${pillClass(p.tier)}">${p.tier}</span></td>
+        <td class="r val-real">${p.totalQtd.toLocaleString('pt-BR')}</td>
+        <td class="r val-day">${p.metaDay}</td>
+        <td class="r val-sat">${p.satMeta.toLocaleString('pt-BR')}</td>
+        <td class="r val-proj">${p.projWeek.toLocaleString('pt-BR')}</td>
+        <td><div class="bar-mini"><div class="bar-fill" style="width:${pct}%;background:${bc}"></div></div></td>
+      </tr>`;
+    }).join('');
+
+    const fr=filtered.reduce((s,p)=>s+p.totalQtd,0);
+    const fd=filtered.reduce((s,p)=>s+p.metaDay,0);
+    const fs=filtered.reduce((s,p)=>s+p.satMeta,0);
+    const fp=filtered.reduce((s,p)=>s+p.projWeek,0);
+    foot.innerHTML = `
+      <td colspan="3">TOTAL DE PRODUÇÃO</td>
+      <td class="r">${fr.toLocaleString('pt-BR')}</td>
+      <td class="r">${fd.toLocaleString('pt-BR')}</td>
+      <td class="r">${fs.toLocaleString('pt-BR')}</td>
+      <td class="r">${fp.toLocaleString('pt-BR')}</td>
+      <td></td>`;
+  } else {
+    // Tabela Visão Diária Ativa (Foco do que produzir hoje)
+    const dayIdx = parseInt(currentView);
+    const isSat = dayIdx === 5;
+    
+    head.innerHTML = `
+      <tr>
+        <th>#</th><th>Produto</th><th>Perfil de Demanda</th>
+        <th class="r">Situação do Dia</th>
+        <th class="r col-proj" style="background:${isSat?'#185FA5':'#166534'};font-size:12px">👉 QUANTO PRODUZIR NESTE DIA</th>
+      </tr>`;
+
+    let displayedProducts = filtered.map(p => ({
+      name: p.name,
+      tier: p.tier,
+      qty: p.allocatedDays[dayIdx]
+    })).filter(p => p.qty > 0); // Oculta o que não precisa produzir no dia para limpar o relatório
+
+    body.innerHTML = displayedProducts.map((p,i)=>{
+      const isRealData = !!S.dayData[dayIdx];
+      const statusLabel = isRealData ? '✅ Realizado (CSV)' : '🔮 Projetado (Alvo)';
+      return `<tr>
+        <td style="color:var(--muted);font-size:11px">${i+1}</td>
+        <td style="font-weight:800;font-size:14px">${cap(p.name)}</td>
+        <td><span class="pill ${pillClass(p.tier)}">${p.tier}</span></td>
+        <td class="r" style="font-size:11px;color:var(--muted)">${statusLabel}</td>
+        <td class="r val-proj" style="font-size:16px;color:${isSat?'#185FA5':'#166534'}">${p.qty.toLocaleString('pt-BR')} un</td>
+      </tr>`;
+    }).join('');
+
+    const totalQty = displayedProducts.reduce((s,p)=>s+p.qty,0);
+    foot.innerHTML = `
+      <td colspan="4">TOTAL DO CRONOGRAMA DIÁRIO</td>
+      <td class="r" style="font-size:16px;font-weight:900">${totalQty.toLocaleString('pt-BR')} un</td>`;
+  }
 }
 
-function setFilter(f){S.activeFilter=f;renderDashboard();}
+function setFilter(f){S.activeFilter=f;renderDashboardStructure();}
 
 /* ── CHARTS ── */
 function renderCharts(){
@@ -558,75 +684,45 @@ function renderCharts(){
       labels:top15.map(p=>cap(p.name).length>16?cap(p.name).slice(0,15)+'…':cap(p.name)),
       datasets:[
         {label:'Real acumulado',data:top15.map(p=>p.totalQtd),backgroundColor:'#C8C3BA',borderRadius:3,maxBarThickness:16},
-        {label:'Projeção +'+margin+'%',data:top15.map(p=>p.projWeek),backgroundColor:top15.map(p=>barColor(p.tier)),borderRadius:3,maxBarThickness:16}
+        {label:'Projeção Final',data:top15.map(p=>p.projWeek),backgroundColor:top15.map(p=>barColor(p.tier)),borderRadius:3,maxBarThickness:16}
       ]
     },
     options:{
       responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y.toLocaleString('pt-BR')}`}}},
-      scales:{x:{ticks:{font:{size:10},maxRotation:40,autoSkip:false},grid:{display:false}},y:{ticks:{font:{size:11}},grid:{color:'#E2DDD4'}}}
+      plugins:{legend:{display:false}},
+      scales:{x:{ticks:{font:{size:10},maxRotation:40},grid:{display:false}},y:{grid:{color:'#E2DDD4'}}}
     }
   });
-  const tc={};
-  products.forEach(p=>{tc[p.tier]=(tc[p.tier]||0)+p.projWeek;});
+  
+  const tc={}; products.forEach(p=>{tc[p.tier]=(tc[p.tier]||0)+p.projWeek;});
   const tKeys=Object.keys(tc), tColors=tKeys.map(t=>barColor(t));
   if(CHARTS.tier)CHARTS.tier.destroy();
   CHARTS.tier=new Chart(document.getElementById('chartTier'),{
     type:'doughnut',
     data:{labels:tKeys,datasets:[{data:tKeys.map(t=>tc[t]),backgroundColor:tColors,borderWidth:0}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.label}: ${c.parsed.toLocaleString('pt-BR')}`}}},cutout:'55%'}
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'55%'}
   });
   document.getElementById('tierLegend').innerHTML=tKeys.map((t,i)=>
     `<div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);margin-bottom:3px">
-      <span style="width:10px;height:10px;border-radius:2px;background:${tColors[i]};flex-shrink:0"></span>${t}: ${tc[t].toLocaleString('pt-BR')}
+      <span style="width:10px;height:10px;border-radius:2px;background:${tColors[i]};"></span>${t}: ${tc[t].toLocaleString('pt-BR')}
     </div>`).join('');
 }
 
-/* ── HISTORY ── */
-function saveHistory(){
-  const {products,weekDates,nLoaded,margin}=S;
-  if(!products.length||!weekDates[0])return;
-  const id=weekDates[0]+'_'+weekDates[5];
-  const entry={id,label:weekDates[0]+' – '+weekDates[5],nLoaded,margin,nProds:products.length,
-    totalProj:products.reduce((s,p)=>s+p.projWeek,0),totalReal:products.reduce((s,p)=>s+p.totalQtd,0),
-    savedAt:new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})};
-  const ei=S.history.findIndex(h=>h.id===id);
-  if(ei>=0)S.history[ei]=entry; else S.history.push(entry);
-  if(S.history.length>12)S.history.shift();
-  localStorage.setItem('bw_hist2',JSON.stringify(S.history));
-}
-
-function renderHistory(){
-  const panel=document.getElementById('historyPanel');
-  if(!S.history.length){panel.style.display='none';return;}
-  panel.style.display='block';
-  document.getElementById('histList').innerHTML=S.history.slice().reverse().map(h=>`
-    <div class="hist-item">
-      <div class="hist-dot"></div>
-      <span class="hist-week">${h.label}</span>
-      <span class="hist-meta">${h.nLoaded}/6 dias · +${h.margin}% · ${h.nProds} produtos</span>
-      <span class="hist-stat">Proj: ${h.totalProj.toLocaleString('pt-BR')} · Real: ${h.totalReal.toLocaleString('pt-BR')}</span>
-      <span style="font-size:10px;color:var(--muted)">salvo ${h.savedAt}</span>
-    </div>`).join('');
-}
-
-function clearHistory(){S.history=[];localStorage.removeItem('bw_hist2');document.getElementById('historyPanel').style.display='none';}
-
-/* ── EXPORT ── */
+/* ── EXPORTS ── */
 function exportCSV(){
   const {products,margin,weekDates}=S;
-  if(!products.length){alert('Nenhum dado para exportar.');return;}
-  const rows=[['Produto','Perfil','Real Acumulado','Dias c/ Dados','Média Diária Real','Meta Diária (+'+margin+'%)','Projeção Semana (+'+margin+'%)','Meta Sábado (×2)']];
-  products.forEach(p=>rows.push([cap(p.name),p.tier,p.totalQtd,p.daysPresent,p.avgReal.toFixed(1),p.metaDay,p.projWeek,p.satMeta]));
-  dlCSV(rows,'brewteco_producao_'+(weekDates[0]||'semana').replace(/\//g,'-')+'.csv');
+  if(!products.length) return;
+  const rows=[['Produto','Perfil','Acumulado Real','Meta Segunda','Meta Terça','Meta Quarta','Meta Quinta','Meta Sexta','Meta Sábado (+Dom)','Projeção Semanal Total']];
+  products.forEach(p=>rows.push([cap(p.name),p.tier,p.totalQtd,p.allocatedDays[0],p.allocatedDays[1],p.allocatedDays[2],p.allocatedDays[3],p.allocatedDays[4],p.allocatedDays[5],p.projWeek]));
+  dlCSV(rows,'brewteco_producao_completa.csv');
 }
 
 function exportRomaneio(){
-  const {products,margin,weekDates}=S;
-  if(!products.length){alert('Nenhum dado para exportar.');return;}
-  const rows=[['Produto','Perfil','Meta Diária (+'+margin+'%)','Meta Sábado (×2)','Projeção Semana (+'+margin+'%)']];
-  products.forEach(p=>rows.push([cap(p.name),p.tier,p.metaDay,p.satMeta,p.projWeek]));
-  dlCSV(rows,'brewteco_romaneio_'+(weekDates[0]||'semana').replace(/\//g,'-')+'.csv');
+  const {products,margin}=S;
+  if(!products.length) return;
+  const rows=[['Produto','Perfil','Meta Diária Comum','Meta Sábado (Abas Dom)']];
+  products.forEach(p=>rows.push([cap(p.name),p.tier,p.metaDay,p.satMeta]));
+  dlCSV(rows,'brewteco_romaneio_resumido.csv');
 }
 
 function dlCSV(rows,name){
@@ -638,10 +734,10 @@ function dlCSV(rows,name){
   URL.revokeObjectURL(url);
 }
 
-/* ── RESET ── */
 function resetAll(){
-  if(!confirm('Limpar todos os dados da semana?'))return;
-  S.dayData=[null,null,null,null,null,null];S.products=[];S.activeFilter='todos';
+  if(!confirm('Limpar todos os dados ativos da semana?'))return;
+  localStorage.removeItem('bw_active_week_state');
+  S.dayData=[null,null,null,null,null,null];S.products=[];S.activeFilter='todos';S.currentView='geral';
   S.weekDates=['','','','','','',''];
   document.getElementById('weekStart').value='';
   document.getElementById('weekBadge').textContent='sem dados';
@@ -653,10 +749,10 @@ function resetAll(){
   setThisWeek();
 }
 
-/* ── INIT ── */
+/* ── RUN ON START ── */
 renderDayCards();
 setThisWeek();
-renderHistory();
+loadStateFromStorage();
 </script>
 </body>
 </html>
