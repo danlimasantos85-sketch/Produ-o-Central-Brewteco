@@ -216,7 +216,7 @@ tfoot td.r{text-align:right}
     <button class="btn-bar" onclick="exportCSV()">⬇ CSV</button>
     <button class="btn-bar" onclick="exportRomaneio()">⬇ Romaneio</button>
     <button class="btn-bar" onclick="window.print()">🖨 Imprimir</button>
-    <button class="btn-bar" onclick="resetAll()">✕ Limpar</button>
+    <button class="btn-bar" onclick="resetAll()">✕ Limpar TUDO</button>
   </div>
 </nav>
 
@@ -242,7 +242,7 @@ tfoot td.r{text-align:right}
     <hr style="border:0; border-top:1px dashed var(--border); margin: 12px 0;">
     <button class="btn config-toggle-btn" onclick="toggleConfigPanel()">⚙️ Configurar Unidades de Medida (Fatores)</button>
     <div id="configPanel" style="display:none;">
-      <div style="font-size:11px; color:var(--muted); margin-bottom: 8px;">Defina a unidade e o peso/volume de 1 porção vendida. Ex: Para carne de 220g coloque 0.22 kg. Para croquete por unidade coloque 1 un.</div>
+      <div style="font-size:11px; color:var(--muted); margin-bottom: 8px;">Defina a unidade e o peso/volume de 1 porção vendida. Ex: Para carne de 220g coloque 0.22 kg. As configurações ficam salvas automaticamente.</div>
       <div class="config-grid" id="configGrid"></div>
     </div>
   </div>
@@ -266,7 +266,7 @@ tfoot td.r{text-align:right}
         </div>
       </div>
       <div class="import-hint">
-        <strong>💡 Conversão Automática de Medidas:</strong> O sistema memoriza o que você configurar acima. Se você disser que o "Anjo" é calculado em kg com fator 0.22, quando o sistema ler 100 unidades vendidas, ele mostrará a produção de 22kg automaticamente.
+        <strong>💡 Conversão de Medidas Automatizada:</strong> O sistema memoriza o que você configurar acima. Os itens só aparecem na listagem após serem processados em um anexo ou texto colado.
       </div>
       <div class="chip-row" id="chipRow"></div>
     </div>
@@ -326,7 +326,7 @@ tfoot td.r{text-align:right}
 const NOISE_WORDS = new Set(['produto','item','descricao','qtd','quantidade','quant','total','subtotal','valor','preco','unidade','un','pc','pcs','loja','data','romaneio','producao','geral','observacao','categoria','cat','litros','litro','kg','g','ml','l','embalagem','ref','codigo','nome','descr','und','nro','nr','seq','no','estornos','grupos','grupo','eventos','evento','bar']);
 const SKIP_START = ['total','subtotal','geral','observ'];
 
-// FILTRO ATUALIZADO: Contém apenas os 26 itens de revenda/cozinha local que você enviou
+// LISTA DE EXCLUSÃO COMPLETA E ATUALIZADA
 const IGNORADOS = new Set([
   'linguica toscana', 'batata frita', 'file tilapia', 'bacon burguer', 
   'caldinho feijao', 'bobo camarao', 'batata cheddar bacon', 'burger carioquissimo burguer', 
@@ -334,7 +334,8 @@ const IGNORADOS = new Set([
   'caesar salad', 'sobremesa restaurant week', 'pudim leite', 'principal restaurant week', 
   'entrada restaurant week', 'mix tropical', 'falafel', 'sorvete creme 2 bolas', 
   'buraco quente vegetariano', 'brigadeiro colher', 'rabanada aniversario', 
-  'arroz branco', 'batata portuguesa', 'feijao preto'
+  'arroz branco', 'batata portuguesa', 'feijao preto',
+  'schnitzel', 'anjo', 'mignon' // Removidos permanentemente conforme solicitado
 ].map(s => s.trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'')));
 
 function isIgnorado(name) { 
@@ -343,13 +344,8 @@ function isIgnorado(name) {
   return IGNORADOS.has(n); 
 }
 
-// Schnitzel e Anjo mantidos e protegidos aqui no dicionário de conversão
-let MEDIDAS_DB = {
-  'SCHNITZEL': { uni: 'kg', fator: 0.22 },
-  'ANJO': { uni: 'kg', fator: 0.22 },
-  'MIGNON': { uni: 'kg', fator: 0.20 },
-  'CROQUETE': { uni: 'un', fator: 1.0 }
-};
+// Inicializa totalmente limpo. As medidas serão gravadas dinamicamente de acordo com o upload.
+let MEDIDAS_DB = {};
 
 function _norm(s) { return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z]/g,''); }
 function _isNoise(token) {
@@ -461,8 +457,14 @@ function toggleConfigPanel() {
 
 function renderConfigGrid() {
   const grid = document.getElementById('configGrid');
-  let chaves = new Set([...Object.keys(MEDIDAS_DB), ...S.products.map(p => p.name.toUpperCase())]);
-  grid.innerHTML = Array.from(chaves).filter(k => !isIgnorado(k)).sort().map(key => {
+  let chaves = new Set(S.products.map(p => p.name.toUpperCase()));
+  
+  if (chaves.size === 0) {
+    grid.innerHTML = `<div style="grid-column: span 3; text-align:center; padding:15px; color:var(--muted); font-size:12px;">Nenhum item importado ainda. Faça upload para configurar fatores.</div>`;
+    return;
+  }
+
+  grid.innerHTML = Array.from(chaves).filter(key => !isIgnorado(key)).sort().map(key => {
     const item = MEDIDAS_DB[key] || { uni: 'un', fator: 1.0 };
     return `
       <div class="config-item">
@@ -603,6 +605,8 @@ function processData() {
 
 function renderDashboard() {
   processData();
+  if (document.getElementById('configPanel').style.display === 'block') renderConfigGrid();
+  
   if (!S.products.length) { document.getElementById('dashboard').style.display = 'none'; document.getElementById('emptyState').style.display = 'block'; return; }
   document.getElementById('dashboard').style.display = 'block'; document.getElementById('emptyState').style.display = 'none';
   const { products, dayTotals, weekDates } = S;
@@ -613,7 +617,7 @@ function renderDashboard() {
     <div class="kpi green"><div class="kpi-l">Meta Sábado (×2)</div><div class="kpi-v">${dayTotals[5].toFixed(1)}</div><div class="kpi-s">Cobre Sáb + Dom</div></div>
     <div class="kpi"><div class="kpi-l">Produtos Ativos</div><div class="kpi-v">${products.length}</div><div class="kpi-s">excluindo bloqueados</div></div>`;
 
-  document.getElementById('disclaBox').innerHTML = `<strong>Filtro de Produção Central Ativo:</strong> Todos os itens de montagem em loja e revenda direta foram higienizados das tabelas.`;
+  document.getElementById('disclaBox').innerHTML = `<strong>Filtro de Produção Central Ativo:</strong> Itens de montagem local e revenda higienizados com sucesso.`;
 
   document.getElementById('bkRow').innerHTML = [0,1,2,3,4,5,6].map(i => {
     if (i===6) return `<div class="bk dom"><div class="bk-day">Dom</div><div class="bk-val">😴</div></div>`;
