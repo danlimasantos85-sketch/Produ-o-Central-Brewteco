@@ -193,6 +193,7 @@ tfoot td.r{text-align:right}
 .empty{text-align:center;padding:3.5rem 2rem;color:var(--muted)}
 .empty .big{font-size:3rem;margin-bottom:.75rem}
 .empty p{font-size:13px;max-width:400px;margin:0 auto;line-height:1.7}
+
 @media(max-width:780px){
   .days-grid{grid-template-columns:repeat(4,1fr)}
   .kpi-row{grid-template-columns:repeat(2,1fr)}
@@ -200,6 +201,32 @@ tfoot td.r{text-align:right}
   .import-grid{grid-template-columns:1fr}
   .import-hint{grid-column:span 1}
   .chip-row{grid-column:span 1}
+}
+
+/* ==========================================================================
+   REGRAS EXCLUSIVAS DE IMPRESSÃO (CTRL+P / SALVAR COMO PDF DO NAVEGADOR)
+   ========================================================================== */
+@media print {
+  /* Oculta absolutamente tudo que não seja o cronograma */
+  body, html, .page { background: #fff !important; color: #000 !important; padding: 0 !important; margin: 0 !important; }
+  .topbar, .setup-card, .import-panel, .sec, .days-grid, #critPanel, .kpi-row, .disclaimer, .bk-row, .view-tabs, #chartCard, #viewLbl {
+    display: none !important;
+  }
+  
+  /* Mantém apenas a div do cronograma visível e remove bordas arredondadas/sombras para impressão limpa */
+  .print-target {
+    display: block !important;
+    position: absolute;
+    top: 0; left: 0; width: 100%;
+    border: none !important;
+    box-shadow: none !important;
+    background: #fff !important;
+  }
+  
+  /* Garante uma boa leitura dos textos e tabelas no papel */
+  table { width: 100% !important; border: 1px solid #000 !important; }
+  thead th { background: #0D2137 !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  tbody td { border-bottom: 1px solid #ddd !important; color: #000 !important; }
 }
 </style>
 </head>
@@ -215,7 +242,7 @@ tfoot td.r{text-align:right}
     <span class="brew-badge" id="weekBadge">sem dados</span>
     <button class="btn-bar" onclick="exportCSV()">⬇ CSV</button>
     <button class="btn-bar" onclick="exportRomaneio()">⬇ Romaneio</button>
-    <button class="btn-bar" onclick="window.print()">🖨 Imprimir</button>
+    <button class="btn-bar" onclick="window.print()">🖨 Imprimir / PDF</button>
     <button class="btn-bar" onclick="resetAll()">✕ Limpar TUDO</button>
   </div>
 </nav>
@@ -293,9 +320,12 @@ tfoot td.r{text-align:right}
       <div style="font-size:11px;color:var(--brew);font-weight:700" id="viewLbl">Visão Geral Semanal</div>
     </div>
     <div class="view-tabs" id="viewTabs"></div>
-    <div class="table-wrap">
+    
+    <!-- AREA ENCAPSULADA QUE SERÁ IMPRESSA -->
+    <div class="table-wrap print-target">
       <table><thead id="thead"></thead><tbody id="tbody"></tbody><tfoot><tr id="tfoot"></tr></tfoot></table>
     </div>
+    
     <div class="chart-card" id="chartCard">
       <h3>Top 15 — projeção semanal com margem (em unidades equivalentes)</h3>
       <div style="position:relative;height:260px"><canvas id="chartTop"></canvas></div>
@@ -606,9 +636,6 @@ function processData() {
     const metaDayPorcoes = Math.ceil(avgReal * mult), metaDay = parseFloat((metaDayPorcoes * config.fator).toFixed(2));
     const allocDay = [0,0,0,0,0,0];
     for (let i=0; i<6; i++) {
-      // MODIFICAÇÃO EXCLUSIVA NO CÁLCULO DA PRODUÇÃO:
-      // Soma a base de vendas do dia + o romaneio externo (extByDay) e aplica a margem em cima da soma total.
-      // Sábado continua com peso dobrado (cobrindo o domingo).
       const somaBaseDia = p.byDay[i] + p.extByDay[i];
       const base = S.dayData[i] ? Math.ceil(somaBaseDia * mult) : (i===5 ? Math.ceil((avgReal + p.extByDay[i])*mult)*2 : Math.ceil((avgReal + p.extByDay[i])*mult));
       allocDay[i] = parseFloat((base * config.fator).toFixed(2)); dayTotals[i] += allocDay[i];
@@ -632,7 +659,7 @@ function renderDashboard() {
     <div class="kpi green"><div class="kpi-l">Meta Sábado (×2)</div><div class="kpi-v">${dayTotals[5].toFixed(1)}</div><div class="kpi-s">Cobre Sáb + Dom</div></div>
     <div class="kpi"><div class="kpi-l">Produtos Ativos</div><div class="kpi-v">${products.length}</div><div class="kpi-s">excluindo bloqueados</div></div>`;
 
-  document.getElementById('disclaBox').innerHTML = `<strong>Filtro de Produção Central Ativo:</strong> Itens de montagem local e revenda higienizados com sucesso.`;
+  document.getElementById('disclaBox').innerHTML = `<strong>Filtro de Production Central Ativo:</strong> Itens de montagem local e revenda higienizados com sucesso.`;
 
   document.getElementById('bkRow').innerHTML = [0,1,2,3,4,5,6].map(i => {
     if (i===6) return `<div class="bk dom"><div class="bk-day">Dom</div><div class="bk-val">😴</div></div>`;
@@ -651,7 +678,7 @@ function switchView(v) { S.view = v; renderViewTabs(); renderTable(); }
 function renderTable() {
   const { products, view } = S; const thead = document.getElementById('thead'), tbody = document.getElementById('tbody');
   if (view === 'geral') {
-    thead.innerHTML = `<tr><th>Produto</th><th>U.M.</th><th>Perfil</th><th class="r">Total Vendas</th><th class="r Meta Diária</th><th class="r col-proj">Proj. Semana</th><th class="r col-sat">Sábado (×2)</th></tr>`;
+    thead.innerHTML = `<tr><th>Produto</th><th>U.M.</th><th>Perfil</th><th class="r">Total Vendas</th><th class="r">Meta Diária</th><th class="r col-proj">Proj. Semana</th><th class="r col-sat">Sábado (×2)</th></tr>`;
     tbody.innerHTML = products.map(p => `<tr><td style="font-weight:600">${cap(p.name)}</td><td><strong style="color:var(--brew)">${p.uni}</strong></td><td><span class="pill ${pillClass(p.tier)}">${p.tier}</span></td><td class="r">${p.totalQtd}</td><td class="r">${p.metaDay}</td><td class="r" style="font-weight:bold">${p.projWeek.toFixed(1)}</td><td class="r">${p.satMeta.toFixed(1)}</td></tr>`).join('');
   } else {
     const di = parseInt(view);
