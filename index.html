@@ -227,9 +227,9 @@ tfoot td.r{text-align:right}
     <div class="setup-row">
       <span class="slabel">Semana:</span>
       <input type="date" id="weekStart">
-      <button class="btn btn-brew" onclick="setWeek()">Definir</button>
+      <button class="btn btn-brew" onclick="setWeek()">Definir Data</button>
       <button class="btn btn-ghost" onclick="setThisWeek()">Esta semana</button>
-      <span style="font-size:11px;color:var(--muted)">A semana inicia sempre na segunda-feira.</span>
+      <span style="font-size:11px;color:var(--muted)">Altere livremente a data inicial para a projeção desejada.</span>
     </div>
     <div class="setup-row">
       <span class="slabel">Margem de segurança:</span>
@@ -242,7 +242,7 @@ tfoot td.r{text-align:right}
     <hr style="border:0; border-top:1px dashed var(--border); margin: 12px 0;">
     <button class="btn config-toggle-btn" onclick="toggleConfigPanel()">⚙️ Configurar Unidades de Medida (Fatores)</button>
     <div id="configPanel" style="display:none;">
-      <div style="font-size:11px; color:var(--muted); margin-bottom: 8px;">Defina a unidade e o peso/volume de 1 porção vendida. Ex: Para carne de 220g coloque 0.22 kg. As configurações ficam salvas automaticamente.</div>
+      <div style="font-size:11px; color:var(--muted); margin-bottom: 8px;">Defina a unidade e o peso/volume de 1 porção vendida. As configurações ficam salvas automaticamente.</div>
       <div class="config-grid" id="configGrid"></div>
     </div>
   </div>
@@ -326,7 +326,6 @@ tfoot td.r{text-align:right}
 const NOISE_WORDS = new Set(['produto','item','descricao','qtd','quantidade','quant','total','subtotal','valor','preco','unidade','un','pc','pcs','loja','data','romaneio','producao','geral','observacao','categoria','cat','litros','litro','kg','g','ml','l','embalagem','ref','codigo','nome','descr','und','nro','nr','seq','no','estornos','grupos','grupo','eventos','evento','bar']);
 const SKIP_START = ['total','subtotal','geral','observ'];
 
-// LISTA DE EXCLUSÃO COMPLETA E ATUALIZADA
 const IGNORADOS = new Set([
   'linguica toscana', 'batata frita', 'file tilapia', 'bacon burguer', 
   'caldinho feijao', 'bobo camarao', 'batata cheddar bacon', 'burger carioquissimo burguer', 
@@ -335,7 +334,7 @@ const IGNORADOS = new Set([
   'entrada restaurant week', 'mix tropical', 'falafel', 'sorvete creme 2 bolas', 
   'buraco quente vegetariano', 'brigadeiro colher', 'rabanada aniversario', 
   'arroz branco', 'batata portuguesa', 'feijao preto',
-  'schnitzel', 'anjo', 'mignon' // Removidos permanentemente conforme solicitado
+  'schnitzel', 'anjo', 'mignon'
 ].map(s => s.trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'')));
 
 function isIgnorado(name) { 
@@ -344,7 +343,6 @@ function isIgnorado(name) {
   return IGNORADOS.has(n); 
 }
 
-// Inicializa totalmente limpo. As medidas serão gravadas dinamicamente de acordo com o upload.
 let MEDIDAS_DB = {};
 
 function _norm(s) { return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z]/g,''); }
@@ -367,8 +365,22 @@ function _detectDelim(text) {
   return ['\t',';',',','|'].map(d => ({ d, n:(sample.match(new RegExp('\\'+d,'g'))||[]).length })).sort((a,b)=>b.n-a.n).find(x => x.n >= 3)?.d || null;
 }
 
+// Tenta identificar uma data válida dentro do conteúdo do CSV para ajudar no auto-setup
+function detectDateInText(text) {
+  const matchIso = text.match(/\b(202\d)[-/](0[1-9]|1[0-2])[-/](0[1-9]|[12]\d|3[01])\b/);
+  if (matchIso) return `${matchIso[1]}-${matchIso[2]}-${matchIso[3]}`;
+  const matchBr = text.match(/\b(0[1-9]|[12]\d|3[01])\/(0[1-9]|1[0-2])\/(202\d)\b/);
+  if (matchBr) return `${matchBr[3]}-${matchBr[2]}-${matchBr[1]}`;
+  return null;
+}
+
 function parseUniversal(rawText) {
   let text = rawText.replace(/^\uFEFF/,'');
+  const detected = detectDateInText(text);
+  if (detected && !document.getElementById('weekStart').value) {
+    document.getElementById('weekStart').value = detected;
+    setWeek();
+  }
   const lines = text.split(/\r?\n|\r/);
   const delim = _detectDelim(text);
   const results = [];
@@ -636,7 +648,7 @@ function switchView(v) { S.view = v; renderViewTabs(); renderTable(); }
 function renderTable() {
   const { products, view } = S; const thead = document.getElementById('thead'), tbody = document.getElementById('tbody');
   if (view === 'geral') {
-    thead.innerHTML = `<tr><th>Produto</th><th>U.M.</th><th>Perfil</th><th class="r">Total Vendas</th><th class="r">Meta Diária</th><th class="r col-proj">Proj. Semana</th><th class="r col-sat">Sábado (×2)</th></tr>`;
+    thead.innerHTML = `<tr><th>Produto</th><th>U.M.</th><th>Perfil</th><th class="r">Total Vendas</th><th class="r Meta Diária</th><th class="r col-proj">Proj. Semana</th><th class="r col-sat">Sábado (×2)</th></tr>`;
     tbody.innerHTML = products.map(p => `<tr><td style="font-weight:600">${cap(p.name)}</td><td><strong style="color:var(--brew)">${p.uni}</strong></td><td><span class="pill ${pillClass(p.tier)}">${p.tier}</span></td><td class="r">${p.totalQtd}</td><td class="r">${p.metaDay}</td><td class="r" style="font-weight:bold">${p.projWeek.toFixed(1)}</td><td class="r">${p.satMeta.toFixed(1)}</td></tr>`).join('');
   } else {
     const di = parseInt(view);
