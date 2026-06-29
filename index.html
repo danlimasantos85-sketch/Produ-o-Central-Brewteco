@@ -365,7 +365,6 @@ function _detectDelim(text) {
   return ['\t',';',',','|'].map(d => ({ d, n:(sample.match(new RegExp('\\'+d,'g'))||[]).length })).sort((a,b)=>b.n-a.n).find(x => x.n >= 3)?.d || null;
 }
 
-// Tenta identificar uma data válida dentro do conteúdo do CSV para ajudar no auto-setup
 function detectDateInText(text) {
   const matchIso = text.match(/\b(202\d)[-/](0[1-9]|1[0-2])[-/](0[1-9]|[12]\d|3[01])\b/);
   if (matchIso) return `${matchIso[1]}-${matchIso[2]}-${matchIso[3]}`;
@@ -607,8 +606,12 @@ function processData() {
     const metaDayPorcoes = Math.ceil(avgReal * mult), metaDay = parseFloat((metaDayPorcoes * config.fator).toFixed(2));
     const allocDay = [0,0,0,0,0,0];
     for (let i=0; i<6; i++) {
-      const base = S.dayData[i] ? Math.ceil(p.byDay[i] * mult) : (i===5 ? metaDayPorcoes*2 : metaDayPorcoes);
-      allocDay[i] = parseFloat(((base + p.extByDay[i]) * config.fator).toFixed(2)); dayTotals[i] += allocDay[i];
+      // MODIFICAÇÃO EXCLUSIVA NO CÁLCULO DA PRODUÇÃO:
+      // Soma a base de vendas do dia + o romaneio externo (extByDay) e aplica a margem em cima da soma total.
+      // Sábado continua com peso dobrado (cobrindo o domingo).
+      const somaBaseDia = p.byDay[i] + p.extByDay[i];
+      const base = S.dayData[i] ? Math.ceil(somaBaseDia * mult) : (i===5 ? Math.ceil((avgReal + p.extByDay[i])*mult)*2 : Math.ceil((avgReal + p.extByDay[i])*mult));
+      allocDay[i] = parseFloat((base * config.fator).toFixed(2)); dayTotals[i] += allocDay[i];
     }
     return { ...p, avgReal, metaDay, satMeta:metaDay*2, projWeek: allocDay.reduce((a,b)=>a+b,0), allocDay, tier: getTier(avgReal), uni: config.uni };
   }).sort((a,b) => b.projWeek - a.projWeek);
