@@ -675,4 +675,27 @@ function renderTable() {
   } else {
     const di = parseInt(view);
     thead.innerHTML = `<tr><th>Insumo Principal (Unificado)</th><th>U.M.</th><th>Perfil</th><th class="r">Base Dia (Eq)</th><th class="r col-ext">Ext (Eq)</th><th class="r col-proj">👉 PRODUÇÃO HOJE</th></tr>`;
-    tbody.innerHTML = products.filter(p => p.allocDay[di] > 0).map(p => `<tr><td style="font-weight:700
+    tbody.innerHTML = products.filter(p => p.allocDay[di] > 0).map(p => `<tr><td style="font-weight:700">${cap(p.name)}</td><td><strong style="color:var(--brew)">${p.uni}</strong></td><td><span class="pill ${pillClass(p.tier)}">${p.tier}</span></td><td class="r">${S.dayData[di]?p.byDay[di].toFixed(0):'—'}</td><td class="r">${p.extByDay[di]?p.extByDay[di].toFixed(0):'—'}</td><td class="r" style="background:var(--foam); font-weight:bold; color:var(--alta-c)">${p.allocDay[di]} ${p.uni}</td></tr>`).join('');
+  }
+}
+
+function renderChart() {
+  const top15 = S.products.slice(0,15); if (CHARTS.top) CHARTS.top.destroy();
+  const ctx = document.getElementById('chartTop');
+  if (ctx && top15.length) {
+    CHARTS.top = new Chart(ctx, {
+      type: 'bar', data: { labels: top15.map(p => cap(p.name).slice(0,12)), datasets: [{ data:top15.map(p=>p.projWeek), backgroundColor:top15.map(p=>barColor(p.tier)) }] },
+      options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}} }
+    });
+  }
+}
+
+function exportCSV() { _dlCSV(S.products.map(p=>[cap(p.name),p.uni,p.metaDay,p.projWeek]), 'producao.csv'); }
+function exportRomaneio() { _dlCSV(S.products.map(p=>[cap(p.name),p.uni,p.metaDay,p.satMeta]), 'romaneio.csv'); }
+function _dlCSV(rows,name) { const csv=rows.map(r=>r.map(c=>'"'+String(c)+'"').join(',')).join('\n'); const blob=new Blob(['\uFEFF'+csv],{type:'text/csv'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=name; a.click(); }
+function resetAll() { localStorage.removeItem('bw_v3_state'); localStorage.removeItem('bw_medidas_db'); location.reload(); }
+
+renderCards(); setThisWeek(); loadSaved();
+</script>
+</body>
+</html>
