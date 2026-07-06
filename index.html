@@ -45,7 +45,7 @@ textarea{cursor:text}
 .btn-bar:hover{background:rgba(255,255,255,0.2);border-color:#fff}
 
 .page{max-width:1060px;margin:0 auto;padding:1.5rem}
-.sec{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.6rem}
+.sec{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.6rem;margin-top:1rem;}
 
 .card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:1.1rem 1.25rem;margin-bottom:1.25rem;box-shadow:var(--shadow)}
 
@@ -96,7 +96,7 @@ input[type=range]{width:130px;accent-color:var(--brew)}
 .import-hint{grid-column:span 2;font-size:11px;color:var(--muted);background:var(--surface3);border-radius:6px;padding:8px 12px;line-height:1.6}
 
 /* DAY CARDS */
-.days-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:1.25rem}
+.days-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:1.25rem;margin-top:0.5rem;}
 .day-card{background:var(--surface);border:1.5px dashed var(--border-md);border-radius:var(--radius-lg);padding:.75rem .6rem;text-align:center;cursor:pointer;position:relative;transition:border-color .15s,background .15s;min-height:118px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
 .day-card:not(.locked):hover{border-color:var(--brew);background:var(--foam)}
 .day-card input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
@@ -116,23 +116,6 @@ input[type=range]{width:130px;accent-color:var(--brew)}
 .dc-rm{position:absolute;top:5px;right:6px;background:rgba(0,0,0,.1);border:none;border-radius:50%;width:18px;height:18px;font-size:10px;line-height:18px;text-align:center;color:var(--muted);display:none;padding:0}
 .day-card.loaded .dc-rm{display:block}
 .dc-rm:hover{background:rgba(200,0,0,.18);color:#c00}
-
-/* INTEGRATED MODAL FOR DATE VERIFICATION */
-.modal-overlay{position:fixed;inset:0;background:rgba(13,33,55,0.4);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;z-index:1000;opacity:0;pointer-events:none;transition:opacity .2s}
-.modal-overlay.active{opacity:1;pointer-events:auto}
-.modal-box{background:var(--surface);border-radius:var(--radius-lg);box-shadow:0 10px 25px rgba(0,0,0,.15);width:90%;max-width:440px;padding:1.5rem;border:1px solid var(--border-md);transform:scale(0.95);transition:transform .2s}
-.modal-overlay.active .modal-box{transform:scale(1)}
-.modal-title{font-size:14px;font-weight:700;color:var(--navy);margin-bottom:6px;display:flex;align-items:center;gap:6px}
-.modal-filename{font-size:12px;background:var(--surface3);padding:4px 8px;border-radius:4px;font-family:monospace;color:var(--muted);word-break:break-all;margin-bottom:12px}
-.modal-label{font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px}
-.modal-select-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:1.25rem}
-.modal-opt{border:1px solid var(--border-md);border-radius:6px;padding:8px 4px;text-align:center;background:var(--surface2);transition:all .15s}
-.modal-opt:hover{border-color:var(--brew);background:var(--foam)}
-.modal-opt.selected{border-color:var(--brew);background:var(--brew);color:#fff}
-.modal-opt .opt-day{font-weight:700;font-size:11px;text-transform:uppercase}
-.modal-opt .opt-date{font-size:10px;opacity:0.8}
-.modal-opt.selected .opt-date{opacity:1}
-.modal-actions{display:flex;justify-content:flex-end;gap:8px}
 
 /* TABLES, KPIS & CHARTS */
 .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.25rem}
@@ -159,10 +142,6 @@ input[type=range]{width:130px;accent-color:var(--brew)}
 .vt:hover{background:var(--surface);color:var(--navy)}
 .vt.act{background:var(--navy);color:#fff}
 .vt.act-day{background:var(--brew);color:#fff}
-.crit{background:#FFF5F5;border:0.5px solid #FEB2B2;border-radius:var(--radius-lg);padding:1rem;margin-bottom:1.25rem}
-.crit-title{font-size:12px;font-weight:700;color:#C53030;text-transform:uppercase;letter-spacing:.04em;margin-bottom:.5rem}
-.crit-list{display:flex;gap:8px;flex-wrap:wrap}
-.crit-item{background:#fff;border:1px solid #FED7D7;padding:5px 12px;border-radius:6px;font-size:12px;font-weight:700;color:#9B2C2C}
 .table-wrap{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow);overflow:hidden;margin-bottom:1.25rem}
 table{width:100%;border-collapse:collapse}
 thead th{background:var(--navy);color:#fff;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:9px 10px;text-align:left;white-space:nowrap}
@@ -180,14 +159,6 @@ tbody td.r{text-align:right;font-variant-numeric:tabular-nums}
 .p-media{background:var(--media-bg);color:var(--media-c)}
 .p-baixa{background:var(--baixa-bg);color:var(--baixa-c)}
 .p-pont{background:var(--pont-bg);color:var(--pont-c)}
-.vproj{font-size:13px;font-weight:700;color:var(--alta-c)}
-.vsat{font-size:13px;font-weight:700;color:#185FA5}
-.vday{font-size:13px;font-weight:700;color:var(--media-c)}
-.vext{font-size:12px;font-weight:700;color:var(--brew)}
-.bar-mini{width:60px;height:4px;background:var(--border);border-radius:2px;display:inline-block;vertical-align:middle}
-.bar-f{height:4px;border-radius:2px}
-tfoot td{background:var(--navy);color:#fff;font-size:12px;font-weight:700;padding:9px 10px}
-tfoot td.r{text-align:right}
 .chart-card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.25rem;box-shadow:var(--shadow);margin-bottom:1.25rem}
 .chart-card h3{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.6rem}
 .empty{text-align:center;padding:3.5rem 2rem;color:var(--muted)}
@@ -195,7 +166,7 @@ tfoot td.r{text-align:right}
 .empty p{font-size:13px;max-width:400px;margin:0 auto;line-height:1.7}
 
 @media(max-width:780px){
-  .days-grid{grid-template-columns:repeat(4,1fr)}
+  .days-grid{grid-template-columns:repeat(3,1fr)}
   .kpi-row{grid-template-columns:repeat(2,1fr)}
   .bk-row{grid-template-columns:repeat(4,1fr)}
   .import-grid{grid-template-columns:1fr}
@@ -205,7 +176,7 @@ tfoot td.r{text-align:right}
 
 @media print {
   body, html, .page { background: #fff !important; color: #000 !important; padding: 0 !important; margin: 0 !important; }
-  .topbar, .setup-card, .import-panel, .sec, .days-grid, #critPanel, .kpi-row, .disclaimer, .bk-row, .view-tabs, #chartCard, #viewLbl {
+  .topbar, .setup-card, .import-panel, .sec, .days-grid, .kpi-row, .disclaimer, .bk-row, .view-tabs, #chartCard, #viewLbl {
     display: none !important;
   }
   .print-target {
@@ -265,7 +236,7 @@ tfoot td.r{text-align:right}
   </div>
 
   <div class="card import-panel">
-    <div class="sec" style="margin-bottom:.7rem">📥 Importar Romaneios Externos</div>
+    <div class="sec" style="margin-bottom:.7rem; margin-top:0;">📥 Importar Romaneios Externos</div>
     <div class="import-grid">
       <div class="drop-zone" id="dropZone">
         <input type="file" multiple accept=".csv,.txt,.tsv" onchange="handleExtFiles(this)" id="extFileInput">
@@ -288,7 +259,7 @@ tfoot td.r{text-align:right}
     </div>
   </div>
 
-  <div class="sec">Upload de vendas por dia — CSVs do dashboard</div>
+  <div class="sec">📊 Upload de Vendas por Dia — CSVs do Dashboard (Segunda a Sábado)</div>
   <div class="days-grid" id="daysGrid"></div>
 
   <div id="dashboard" style="display:none">
@@ -307,14 +278,14 @@ tfoot td.r{text-align:right}
     </div>
     
     <div class="chart-card" id="chartCard">
-      <h3>Top 15 — projeção semanal com margem (em unidades equivalentes)</h3>
+      <h3>Top 15 — projeção semanal com margin (em unidades equivalentes)</h3>
       <div style="position:relative;height:260px"><canvas id="chartTop"></canvas></div>
     </div>
   </div>
 
   <div class="empty" id="emptyState">
     <div class="big">🍺</div>
-    <p>Defina a semana e faça upload dos CSVs de vendas por dia, ou importe romaneios externos.</p>
+    <p>Defina a semana e faça upload dos CSVs de vendas por dia (Seg a Sáb), ou importe romaneios externos.</p>
   </div>
 </div>
 
@@ -357,4 +328,351 @@ function extrairNomeUnificado(rawName) {
   name = name.replace(/\s+/g, ' ').trim();
   
   for (const rad of RADICAIS_CONHECIDOS) {
-    if
+    if (name.includes(rad) || rad.includes(name)) {
+      return rad + " (CONSOLIDADO)";
+    }
+  }
+  if (name.length < 3) return rawName.toUpperCase().trim();
+  return name;
+}
+
+function isIgnorado(name) { 
+  if(!name) return true;
+  const n = name.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  return IGNORADOS.has(n); 
+}
+
+let MEDIDAS_DB = {};
+
+function _norm(s) { return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z]/g,''); }
+function _isNoise(token) {
+  if (!token || token.trim().length < 2) return true;
+  const n = _norm(token);
+  if (NOISE_WORDS.has(n) || SKIP_START.some(p => n.startsWith(p))) return true;
+  if (/^[\d.,R$%\s/\-]+$/.test(token)) return true;
+  return false;
+}
+function _cleanNum(s) {
+  if (s == null) return NaN;
+  s = String(s).trim().replace(/\s/g,'').replace(/[R$]/gi,'').replace(/\b(unidades?|un|kg|pcs?|g|ml)\s*$/i,'').trim();
+  if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(s)) s = s.replace(/\./g,'').replace(',','.'); else s = s.replace(',','.');
+  const n = parseFloat(s);
+  return (isNaN(n) || n <= 0 || n >= 10000) ? NaN : n;
+}
+function _detectDelim(text) {
+  const sample = text.slice(0,3000);
+  return ['\t',';',',','|'].map(d => ({ d, n:(sample.match(new RegExp('\\'+d,'g'))||[]).length })).sort((a,b)=>b.n-a.n).find(x => x.n >= 3)?.d || null;
+}
+
+function detectDateInText(text) {
+  const matchIso = text.match(/\b(202\d)[-/](0[1-9]|1[0-2])[-/](0[1-9]|[12]\d|3[01])\b/);
+  if (matchIso) return `${matchIso[1]}-${matchIso[2]}-${matchIso[3]}`;
+  const matchBr = text.match(/\b(0[1-9]|[12]\d|3[01])\/(0[1-9]|1[0-2])\/(202\d)\b/);
+  if (matchBr) return `${matchBr[3]}-${matchBr[2]}-${matchBr[1]}`;
+  return null;
+}
+
+function parseUniversal(rawText) {
+  let text = rawText.replace(/^\uFEFF/,'');
+  const detected = detectDateInText(text);
+  if (detected && !document.getElementById('weekStart').value) {
+    document.getElementById('weekStart').value = detected;
+    setWeek();
+  }
+  const lines = text.split(/\r?\n|\r/);
+  const delim = _detectDelim(text);
+  const results = [];
+  if (delim) {
+    let nameIdx = -1, qtyIdx = -1, headerFound = false;
+    for (const line of lines) {
+      const raw = line.trim(); if (!raw) continue;
+      const cells = raw.split(delim).map(c => c.replace(/^["'\s]+|["'\s]+$/g,'').trim());
+      if (!headerFound) {
+        const normed = cells.map(_norm);
+        const ni = normed.findIndex(c => ['produto','item','descricao','nome'].some(k => c===k||c.startsWith(k)));
+        const qi = normed.findIndex(c => ['qtd','quant','quantidade'].some(k => c===k||c.startsWith(k)));
+        if (ni >= 0 && qi >= 0) { nameIdx = ni; qtyIdx = qi; headerFound = true; continue; }
+      }
+      if (nameIdx < 0 || cells.length <= qtyIdx) continue;
+      const name = cells[nameIdx], qty = _cleanNum(cells[qtyIdx]);
+      if (!_isNoise(name) && !isNaN(qty) && !isIgnorado(name)) results.push({ Produto: name, Qtd: qty });
+    }
+    if (results.length >= 1) return results.filter(r => !_isNoise(r.Produto) && !isIgnorado(r.Produto));
+  }
+  const rSep = /^(.+?)\s*[-–—:]\s*(\d[\d.,]*)\s*/i;
+  for (const line of lines) {
+    const raw = line.trim(); if (!raw || raw.length < 4) continue;
+    let name='', qty=NaN, m1 = raw.match(rSep);
+    if (m1) { name=m1[1].trim(); qty=_cleanNum(m1[2]); }
+    if (!_isNoise(name) && !isNaN(qty) && name.length > 2 && !isIgnorado(name)) results.push({ Produto: name, Qtd: qty });
+  }
+  return results;
+}
+
+const DSHORT = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+
+let S = {
+  weekDates: ['','','','','','',''],
+  dayData: [null,null,null,null,null,null],
+  externals: [],
+  margin: 30,
+  view: 'geral',
+  products: [],
+  dayTotals: [0,0,0,0,0,0],
+  allRawProductNames: new Set()
+};
+let CHARTS = { top: null };
+let pendingImport = null;
+
+function save() {
+  if (!S.weekDates[0]) return;
+  localStorage.setItem('bw_v3_state', JSON.stringify({ weekDates: S.weekDates, margin: S.margin, dayData: S.dayData, externals: S.externals, allRawProductNames: Array.from(S.allRawProductNames) }));
+  localStorage.setItem('bw_medidas_db', JSON.stringify(MEDIDAS_DB));
+}
+
+function loadSaved() {
+  const savedMedidas = localStorage.getItem('bw_medidas_db');
+  if (savedMedidas) { try { MEDIDAS_DB = JSON.parse(savedMedidas); } catch(e){} }
+  const raw = localStorage.getItem('bw_v3_state'); if (!raw) return;
+  try {
+    const p = JSON.parse(raw);
+    S.weekDates = p.weekDates || S.weekDates;
+    S.margin = p.margin || 30;
+    S.dayData = p.dayData || [null,null,null,null,null,null];
+    S.externals = p.externals || [];
+    S.allRawProductNames = new Set(p.allRawProductNames || []);
+    document.getElementById('marginSlider').value = S.margin;
+    document.getElementById('marginDisp').textContent = '+' + S.margin + '%';
+    if (S.weekDates[0]) document.getElementById('weekBadge').textContent = S.weekDates[0]+' – '+S.weekDates[5];
+    renderCards(); renderChips(); renderDashboard();
+  } catch(e) {}
+}
+
+function setThisWeek() { document.getElementById('weekStart').value = new Date().toISOString().slice(0,10); setWeek(); }
+function setWeek() {
+  const v = document.getElementById('weekStart').value; if (!v) return;
+  const base = new Date(v+'T12:00:00'), diff = base.getDay()===0 ? -6 : 1-base.getDay(), mon = new Date(base); mon.setDate(base.getDate()+diff);
+  for (let i=0; i<7; i++) { const d = new Date(mon); d.setDate(mon.getDate()+i); S.weekDates[i] = d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}); }
+  document.getElementById('weekBadge').textContent = S.weekDates[0]+' – '+S.weekDates[5];
+  save(); renderCards(); renderDashboard();
+}
+function onMargin(v) { S.margin = parseInt(v); document.getElementById('marginDisp').textContent = '+'+v+'%'; save(); renderDashboard(); }
+
+function toggleConfigPanel() {
+  const p = document.getElementById('configPanel');
+  p.style.display = p.style.display === 'none' ? 'block' : 'none';
+  if(p.style.display === 'block') renderConfigGrid();
+}
+
+function renderConfigGrid() {
+  const grid = document.getElementById('configGrid');
+  if (S.allRawProductNames.size === 0) {
+    grid.innerHTML = `<div style="grid-column: span 3; text-align:center; padding:15px; color:var(--muted); font-size:12px;">Nenhum item importado ainda. Faça upload de arquivos ou cole dados para listar os fatores.</div>`;
+    return;
+  }
+  grid.innerHTML = Array.from(S.allRawProductNames).filter(key => !isIgnorado(key)).sort().map(key => {
+    const item = MEDIDAS_DB[key] || { uni: 'un', fator: 1.0 };
+    return `
+      <div class="config-item">
+        <div class="config-item-name" title="${key}">${cap(key)}</div>
+        <div class="config-inputs">
+          <select onchange="updateMedida('${key}', 'uni', this.value)">
+            <option value="un" ${item.uni==='un'?'selected':''}>un</option>
+            <option value="kg" ${item.uni==='kg'?'selected':''}>kg</option>
+            <option value="L" ${item.uni==='L'?'selected':''}>L</option>
+          </select>
+          <input type="number" step="0.001" min="0.001" value="${item.fator}" onchange="updateMedida('${key}', 'fator', this.value)">
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function updateMedida(key, field, value) {
+  if (!MEDIDAS_DB[key]) MEDIDAS_DB[key] = { uni: 'un', fator: 1.0 };
+  if (field === 'uni') MEDIDAS_DB[key].uni = value;
+  if (field === 'fator') MEDIDAS_DB[key].fator = Math.max(0.001, parseFloat(value) || 1.0);
+  save(); renderDashboard();
+}
+
+function openDateModal(label, rows, initialIdx) {
+  pendingImport = { label, rows: rows.filter(r => !isIgnorado(r.Produto)), selectedIdx: initialIdx };
+  document.getElementById('modalFilename').textContent = label;
+  const grid = document.getElementById('modalSelectGrid');
+  grid.innerHTML = [0,1,2,3,4,5].map(i => `
+    <div class="modal-opt ${i === initialIdx ? 'selected' : ''}" onclick="selectModalDay(${i})" id="opt-day-${i}">
+      <div class="opt-day">${DSHORT[i]}</div>
+      <div class="opt-date">${S.weekDates[i] || '—'}</div>
+    </div>`).join('');
+  document.getElementById('dateModal').classList.add('active');
+}
+function selectModalDay(idx) {
+  if (!pendingImport) return; pendingImport.selectedIdx = idx;
+  [0,1,2,3,4,5].forEach(i => document.getElementById(`opt-day-${i}`).classList.remove('selected'));
+  document.getElementById(`opt-day-${idx}`).classList.add('selected');
+}
+function closeDateModal() { pendingImport = null; document.getElementById('dateModal').classList.remove('active'); }
+function confirmDateModal() {
+  if (!pendingImport) return;
+  pendingImport.rows.forEach(r => S.allRawProductNames.add(r.Produto.trim().toUpperCase()));
+  S.externals.push({ id: Date.now()+'_'+Math.random().toString(36).slice(2,6), label: pendingImport.label.slice(0,20), targetIdx: pendingImport.selectedIdx, rows: pendingImport.rows });
+  save(); renderChips(); renderDashboard(); closeDateModal();
+}
+
+function handleExtFiles(input) {
+  const files = [...input.files]; if (!files.length) return;
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const rows = parseUniversal(e.target.result);
+      if (rows.length) openDateModal(file.name, rows, 5);
+    };
+    reader.readAsText(file, 'UTF-8');
+  });
+  input.value = '';
+}
+function processPaste() {
+  const text = document.getElementById('pasteInput').value;
+  if (!text.trim()) return;
+  const rows = parseUniversal(text);
+  if (rows.length) { document.getElementById('pasteInput').value = ''; openDateModal('Texto Colado', rows, 5); }
+}
+function removeExt(id) { S.externals = S.externals.filter(x => x.id !== id); save(); renderChips(); renderDashboard(); }
+function renderChips() {
+  document.getElementById('chipRow').innerHTML = S.externals.map(x => `
+    <div class="chip"><span>🏢 ${x.label}</span><span class="tag">${S.weekDates[x.targetIdx]||DSHORT[x.targetIdx]}</span><button onclick="removeExt('${x.id}')">✕</button></div>`).join('');
+}
+
+function renderCards() {
+  const grid = document.getElementById('daysGrid'); grid.innerHTML = '';
+  for (let i=0; i<6; i++) {
+    const loaded = !!S.dayData[i], sat = i===5;
+    const qtd = loaded ? S.dayData[i].reduce((s,r)=>isIgnorado(r.Produto)?s:s+(parseFloat(r.Qtd)||0),0) : 0;
+    const card = document.createElement('div'); card.className = 'day-card'+(sat?' sat':'')+(loaded?' loaded':'');
+    card.innerHTML = `
+      ${loaded?`<button class="dc-rm" onclick="removeDay(event,${i})">✕</button>`:''}
+      <input type="file" accept=".csv,.txt,.tsv" onchange="loadDayFile(${i},this)" ${loaded?'style="display:none"':''}>
+      <div class="dc-icon">${loaded?'✅':sat?'📦':'📂'}</div>
+      <div class="dc-name">${sat?'SÁB + DOM':DSHORT[i].toUpperCase()}</div>
+      <div class="dc-date">${S.weekDates[i]||'—'}</div>
+      ${loaded ? `<div class="dc-q">${qtd} un</div>` : ''}`;
+    grid.appendChild(card);
+  }
+}
+
+function loadDayFile(idx, input) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const rows = parseUniversal(e.target.result);
+    if (rows.length) { 
+      rows.forEach(r => S.allRawProductNames.add(r.Produto.trim().toUpperCase()));
+      S.dayData[idx] = rows.filter(r => !isIgnorado(r.Produto)); 
+      save(); renderCards(); renderDashboard(); 
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+function removeDay(evt, idx) { evt.stopPropagation(); S.dayData[idx] = null; save(); renderCards(); renderDashboard(); }
+
+function getTier(avg) { if (avg >= 20) return 'Alta demanda'; if (avg >= 10) return 'Demanda média'; return 'Pontual'; }
+function pillClass(t) { return {'Alta demanda':'p-alta','Demanda média':'p-media'}[t]||'p-pont'; }
+function barColor(t) { return {'Alta demanda':'#2a78d6','Demanda média':'#1baf7a'}[t]||'#888780'; }
+function cap(s) { return (s||'').toLowerCase().replace(/\b\w/g,c=>c.toUpperCase()); }
+
+function processData() {
+  const { dayData, externals, margin } = S;
+  const loadedIdx = dayData.map((d,i)=>d?i:null).filter(i=>i!==null);
+  if (!loadedIdx.length && !externals.length) { S.products = []; return; }
+  const map = {}, dayTotals = [0,0,0,0,0,0], mult = 1 + margin/100;
+  
+  loadedIdx.forEach(idx => {
+    dayData[idx].forEach(r => {
+      const originalName = r.Produto.trim().toUpperCase(); if(isIgnorado(originalName)) return;
+      const unifiedName = extrairNomeUnificado(originalName);
+      const key = unifiedName.toUpperCase();
+      const configOriginal = MEDIDAS_DB[originalName] || { uni: 'un', fator: 1.0 };
+      const quantidadeConvertida = parseFloat(r.Qtd || 0) * configOriginal.fator;
+
+      if (!map[key]) map[key] = { name: unifiedName, byDay:[0,0,0,0,0,0], extByDay:[0,0,0,0,0,0], totalQtd:0 };
+      map[key].byDay[idx] += quantidadeConvertida; 
+      map[key].totalQtd += quantidadeConvertida;
+    });
+  });
+
+  externals.forEach(ext => {
+    ext.rows.forEach(r => {
+      const originalName = r.Produto.trim().toUpperCase(); if(isIgnorado(originalName)) return;
+      const unifiedName = extrairNomeUnificado(originalName);
+      const key = unifiedName.toUpperCase();
+      const configOriginal = MEDIDAS_DB[originalName] || { uni: 'un', fator: 1.0 };
+      const quantidadeConvertida = parseFloat(r.Qtd || 0) * configOriginal.fator;
+
+      if (!map[key]) map[key] = { name: unifiedName, byDay:[0,0,0,0,0,0], extByDay:[0,0,0,0,0,0], totalQtd:0 };
+      map[key].extByDay[ext.targetIdx] += quantidadeConvertida; 
+      map[key].totalQtd += quantidadeConvertida;
+    });
+  });
+  
+  S.products = Object.values(map).map(p => {
+    const key = p.name.toUpperCase();
+    const configGeral = MEDIDAS_DB[key] || { uni: 'un', fator: 1.0 };
+    const dp = Math.max(loadedIdx.filter(i => p.byDay[i]>0).length, 1), avgReal = p.totalQtd / dp;
+    const metaDay = Math.ceil(avgReal * mult);
+    const allocDay = [0,0,0,0,0,0];
+    
+    for (let i=0; i<6; i++) {
+      const somaBaseDia = p.byDay[i] + p.extByDay[i];
+      let base = 0;
+      if (S.dayData[i]) {
+        base = Math.ceil(somaBaseDia * mult);
+      } else {
+        base = (i===5) ? Math.ceil((avgReal + p.extByDay[i])*mult)*2 : Math.ceil((avgReal + p.extByDay[i])*mult);
+      }
+      allocDay[i] = base; 
+      dayTotals[i] += base;
+    }
+    
+    return { ...p, avgReal, metaDay, satMeta:metaDay*2, projWeek: allocDay.reduce((a,b)=>a+b,0), allocDay, tier: getTier(avgReal), uni: configGeral.uni };
+  }).sort((a,b) => b.projWeek - a.projWeek);
+  
+  S.dayTotals = dayTotals.map(v => parseFloat(v.toFixed(2)));
+}
+
+function renderDashboard() {
+  processData();
+  if (document.getElementById('configPanel').style.display === 'block') renderConfigGrid();
+  if (!S.products.length) { document.getElementById('dashboard').style.display = 'none'; document.getElementById('emptyState').style.display = 'block'; return; }
+  document.getElementById('dashboard').style.display = 'block'; document.getElementById('emptyState').style.display = 'none';
+  const { products, dayTotals } = S;
+  
+  document.getElementById('kpiRow').innerHTML = `
+    <div class="kpi blue"><div class="kpi-l">Volume Estimado</div><div class="kpi-v">${products.reduce((s,p)=>s+p.projWeek,0).toFixed(0)}</div><div class="kpi-s">Unidades combinadas</div></div>
+    <div class="kpi brew"><div class="kpi-l">Média Diária</div><div class="kpi-v">${products.reduce((s,p)=>s+p.metaDay,0).toFixed(0)}</div><div class="kpi-s">por dia ativo</div></div>
+    <div class="kpi green"><div class="kpi-l">Meta Sábado (×2)</div><div class="kpi-v">${dayTotals[5].toFixed(0)}</div><div class="kpi-s">Cobre Sáb + Dom</div></div>
+    <div class="kpi"><div class="kpi-l">Insumos Consolidados</div><div class="kpi-v">${products.length}</div><div class="kpi-s">excluindo bloqueados</div></div>`;
+
+  document.getElementById('disclaBox').innerHTML = `<strong>Aviso de Conversão Inteligente:</strong> Os fatores definidos acima foram aplicados individualmente aos itens de entrada. O cronograma abaixo reflete a produção consolidada unificada.`;
+
+  document.getElementById('bkRow').innerHTML = [0,1,2,3,4,5,6].map(i => {
+    if (i===6) return `<div class="bk dom"><div class="bk-day">Dom</div><div class="bk-val">😴</div></div>`;
+    return `<div class="bk ${i===5?'sat':''}"><div class="bk-day">${i===5?'Sáb+Dom':DSHORT[i]}</div><div class="bk-val">${(dayTotals[i]||0).toFixed(0)}</div></div>`;
+  }).join('');
+
+  renderViewTabs(); renderTable(); renderChart();
+}
+
+function renderViewTabs() {
+  const tabs = [{ id:'geral', label:'📋 Geral', cls:'act' }, ...DSHORT.slice(0,6).map((s,i) => ({ id:String(i), label: i===5 ? `🗓 Sáb+Dom` : `🗓 ${s}`, cls:'act-day' }))];
+  document.getElementById('viewTabs').innerHTML = tabs.map(t => `<button class="vt ${S.view===t.id ? t.cls : ''}" onclick="switchView('${t.id}')">${t.label}</button>`).join('');
+}
+function switchView(v) { S.view = v; renderViewTabs(); renderTable(); }
+
+function renderTable() {
+  const { products, view } = S; const thead = document.getElementById('thead'), tbody = document.getElementById('tbody');
+  if (view === 'geral') {
+    thead.innerHTML = `<tr><th>Insumo Principal (Unificado)</th><th>U.M.</th><th>Perfil</th><th class="r">Total Vendas (Eq)</th><th class="r">Meta Diária</th><th class="r col-proj">Proj. Semana</th><th class="r col-sat">Sábado (×2)</th></tr>`;
+    tbody.innerHTML = products.map(p => `<tr><td style="font-weight:600">${cap(p.name)}</td><td><strong style="color:var(--brew)">${p.uni}</strong></td><td><span class="pill ${pillClass(p.tier)}">${p.tier}</span></td><td class="r">${p.totalQtd.toFixed(0)}</td><td class="r">${p.metaDay}</td><td class="r" style="font-weight:bold">${p.projWeek.toFixed(0)}</td><td class="r">${p.satMeta.toFixed(0)}</td></tr>`).join('');
+  } else {
+    const di = parseInt(view);
+    thead.innerHTML = `<tr><th>Insumo Principal (Unificado)</th><th>U.M.</th><th>Perfil</th><th class="r">Base Dia (Eq)</th><th class="r col-ext">Ext (Eq)</th><th class="r col-proj">👉 PRODUÇÃO HOJE</th></tr>`;
+    tbody.innerHTML = products.filter(p => p.allocDay[di] > 0).map(p => `<tr><td style="font-weight:700
