@@ -117,6 +117,22 @@ input[type=range]{width:130px;accent-color:var(--brew)}
 .day-card.loaded .dc-rm{display:block}
 .dc-rm:hover{background:rgba(200,0,0,.18);color:#c00}
 
+/* ESTILOS DO MODAL (CORRIGIDO) */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 1rem; }
+.modal-overlay.active { display: flex; }
+.modal-box { background: var(--surface); padding: 1.5rem; border-radius: var(--radius-lg); max-width: 500px; width: 100%; box-shadow: 0 4px 20px rgba(0,0,0,0.15); border: 1px solid var(--border); }
+.modal-title { font-size: 14px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+.modal-filename { font-size: 12px; color: var(--brew); font-weight: 600; margin-bottom: 12px; background: var(--foam); padding: 4px 8px; border-radius: 4px; display: inline-block; }
+.modal-label { font-size: 12px; color: var(--muted); margin-bottom: 10px; font-weight: 500; }
+.modal-select-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 1.5rem; }
+.modal-opt { background: var(--surface2); border: 1px solid var(--border-md); border-radius: 6px; padding: 8px; text-align: center; cursor: pointer; transition: all 0.15s; }
+.modal-opt:hover { border-color: var(--brew); background: var(--foam); }
+.modal-opt.selected { background: var(--navy); border-color: var(--navy); color: #fff; }
+.modal-opt.selected .opt-date { color: rgba(255,255,255,0.7); }
+.opt-day { font-weight: 700; font-size: 13px; }
+.opt-date { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--border); padding-top: 12px; }
+
 /* TABLES, KPIS & CHARTS */
 .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.25rem}
 .kpi{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:.85rem 1rem;box-shadow:var(--shadow)}
@@ -494,21 +510,26 @@ function updateMedida(key, field, value) {
   save(); renderDashboard();
 }
 
+/* MODAL CONTROL (TOTALMENTE FUNCIONAL AGORA) */
 function openDateModal(label, rows, initialIdx) {
   pendingImport = { label, rows: rows.filter(r => !isIgnorado(r.Produto)), selectedIdx: initialIdx };
   document.getElementById('modalFilename').textContent = label;
   const grid = document.getElementById('modalSelectGrid');
   grid.innerHTML = [0,1,2,3,4,5].map(i => `
     <div class="modal-opt ${i === initialIdx ? 'selected' : ''}" onclick="selectModalDay(${i})" id="opt-day-${i}">
-      <div class="opt-day">${DSHORT[i]}</div>
+      <div class="opt-day">${i===5 ? 'Sáb+Dom' : DSHORT[i]}</div>
       <div class="opt-date">${S.weekDates[i] || '—'}</div>
     </div>`).join('');
   document.getElementById('dateModal').classList.add('active');
 }
 function selectModalDay(idx) {
   if (!pendingImport) return; pendingImport.selectedIdx = idx;
-  [0,1,2,3,4,5].forEach(i => document.getElementById(`opt-day-${i}`).classList.remove('selected'));
-  document.getElementById(`opt-day-${idx}`).classList.add('selected');
+  [0,1,2,3,4,5].forEach(i => {
+    const opt = document.getElementById(`opt-day-${i}`);
+    if(opt) opt.classList.remove('selected');
+  });
+  const currentOpt = document.getElementById(`opt-day-${idx}`);
+  if(currentOpt) currentOpt.classList.add('selected');
 }
 function closeDateModal() { pendingImport = null; document.getElementById('dateModal').classList.remove('active'); }
 function confirmDateModal() {
