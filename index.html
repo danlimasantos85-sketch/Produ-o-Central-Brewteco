@@ -343,6 +343,7 @@ tfoot td.r{text-align:right}
 const NOISE_WORDS = new Set(['produto','item','descricao','qtd','quantidade','quant','total','subtotal','valor','preco','unidade','un','pc','pcs','loja','data','romaneio','producao','geral','observacao','categoria','cat','litros','litro','kg','g','ml','l','embalagem','ref','codigo','nome','descr','und','nro','nr','seq','no','estornos','grupos','grupo','eventos','evento','bar']);
 const SKIP_START = ['total','subtotal','geral','observ'];
 
+// Lista consolidada e expandida de itens bloqueados (não entram na produção da Cozinha Central)
 const IGNORADOS = new Set([
   'linguica toscana', 'batata frita', 'file tilapia', 'bacon burguer', 
   'caldinho feijao', 'bobo camarao', 'batata cheddar bacon', 'burger carioquissimo burguer', 
@@ -350,8 +351,10 @@ const IGNORADOS = new Set([
   'caesar salad', 'sobremesa restaurant week', 'pudim leite', 'principal restaurant week', 
   'entrada restaurant week', 'mix tropical', 'falafel', 'sorvete creme 2 bolas', 
   'buraco quente vegetariano', 'brigadeiro colher', 'rabanada aniversario', 
-  'arroz branco', 'batata portuguesa', 'feijao preto',
-  'schnitzel', 'anjo', 'mignon'
+  'arroz branco', 'batata portuguesa', 'feijao preto', 'schnitzel', 'anjo', 'mignon',
+  'combo bolinhos 3 unidades', 'combo bolinhos 10 unidades', 'combo bolinhos 6 unidades', 
+  'combo bolinhos 5 unidades', 'combo bolinhos 8 unidades', 'combo bolinhos 9 unidades', 
+  'combo bolinhos 4 unidades', 'galeto combinado'
 ].map(s => s.trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'')));
 
 // Lista de palavras chave comuns conhecidas para unificação inteligente
@@ -359,7 +362,7 @@ const RADICAIS_CONHECIDOS = ['ANCHO', 'FRALDINHA', 'GALETo', 'PASTEL DE QUEIJO',
 
 function extrairNomeUnificado(rawName) {
   let name = rawName.toUpperCase().trim();
-  // Remove prefixos operacionais comuns
+  // Remove prefixos e sufixos operacionais comuns
   name = name.replace(/^(PREP\s+DE\s+|PREP\s+|PREPARACAO\s+DE\s+|PREPARACAO\s+|MENU\s+KIDS\s+)/g, '');
   name = name.replace(/(COMBINADO|PORCAO|BUFFET|PRONTO|MARINADO|FATIAS|STEAK|MASSA\s+DE|RECHEIO)/g, '').trim();
   name = name.replace(/\s+/g, ' ').trim();
@@ -623,7 +626,7 @@ function processData() {
   if (!loadedIdx.length && !externals.length) { S.products = []; return; }
   const map = {}, dayTotals = [0,0,0,0,0,0], mult = 1 + margin/100;
   
-  // Agrupa os dados dos arquivos diários aplicando a regra de unificação de nomes
+  // Agrupa os dados dos arquivos diários aplicando a regra de unificação
   loadedIdx.forEach(idx => {
     dayData[idx].forEach(r => {
       const originalName = r.Produto.trim(); if(isIgnorado(originalName)) return;
@@ -671,4 +674,56 @@ function renderDashboard() {
   const { products, dayTotals } = S;
   
   document.getElementById('kpiRow').innerHTML = `
-    <div class="kpi blue"><div class="kpi-l">Volume Estimado</div><div class="kpi-v">${products.reduce((s,p)=>s+p
+    <div class="kpi blue"><div class="kpi-l">Volume Estimado</div><div class="kpi-v">${products.reduce((s,p)=>s+p.projWeek,0).toFixed(1)}</div><div class="kpi-s">Unidades combinadas</div></div>
+    <div class="kpi brew"><div class="kpi-l">Média Diária</div><div class="kpi-v">${products.reduce((s,p)=>s+p.metaDay,0).toFixed(1)}</div><div class="kpi-s">por dia ativo</div></div>
+    <div class="kpi green"><div class="kpi-l">Meta Sábado (×2)</div><div class="kpi-v">${dayTotals[5].toFixed(1)}</div><div class="kpi-s">Cobre Sáb + Dom</div></div>
+    <div class="kpi"><div class="kpi-l">Produtos Ativos</div><div class="kpi-v">${products.length}</div><div class="kpi-s">excluindo bloqueados</div></div>`;
+
+  document.getElementById('disclaBox').innerHTML = `<strong>Filtros Avançados Aplicados:</strong> Itens operacionais, sobremesas, combos de bolinhos e guarnições de loja foram devidamente ocultados da produção central.`;
+
+  document.getElementById('bkRow').innerHTML = [0,1,2,3,4,5,6].map(i => {
+    if (i===6) return `<div class="bk dom"><div class="bk-day">Dom</div><div class="bk-val">😴</div></div>`;
+    return `<div class="bk ${i===5?'sat':''}"><div class="bk-day">${DSHORT[i]}</div><div class="bk-val">${(dayTotals[i]||0).toFixed(1)}</div></div>`;
+  }).join('');
+
+  renderViewTabs(); renderTable(); renderChart();
+}
+
+function renderViewTabs() {
+  const tabs = [{ id:'geral', label:'📋 Geral', cls:'act' }, ...DSHORT.slice(0,6).map((s,i) => ({ id:String(i), label:`🗓 ${s}`, cls:'act-day' }))];
+  document.getElementById('viewTabs').innerHTML = tabs.map(t => `<button class="vt ${S.view===t.id ? t.cls : ''}" onclick="switchView('${t.id}')">${t.label}</button>`).join('');
+}
+function switchView(v) { S.view = v; renderViewTabs(); renderTable(); }
+
+function renderTable() {
+  const { products, view } = S; const thead = document.getElementById('thead'), tbody = document.getElementById('tbody');
+  if (view === 'geral') {
+    thead.innerHTML = `<tr><th>Insumo Principal (Unificado)</th><th>U.M.</th><th>Perfil</th><th class="r">Total Vendas</th><th class="r">Meta Diária</th><th class="r col-proj">Proj. Semana</th><th class="r col-sat">Sábado (×2)</th></tr>`;
+    tbody.innerHTML = products.map(p => `<tr><td style="font-weight:600">${cap(p.name)}</td><td><strong style="color:var(--brew)">${p.uni}</strong></td><td><span class="pill ${pillClass(p.tier)}">${p.tier}</span></td><td class="r">${p.totalQtd}</td><td class="r">${p.metaDay}</td><td class="r" style="font-weight:bold">${p.projWeek.toFixed(1)}</td><td class="r">${p.satMeta.toFixed(1)}</td></tr>`).join('');
+  } else {
+    const di = parseInt(view);
+    thead.innerHTML = `<tr><th>Insumo Principal (Unificado)</th><th>U.M.</th><th>Perfil</th><th class="r">Base Dia (un)</th><th class="r col-ext">Ext.</th><th class="r col-proj">👉 PRODUÇÃO HOJE</th></tr>`;
+    tbody.innerHTML = products.filter(p => p.allocDay[di] > 0).map(p => `<tr><td style="font-weight:700">${cap(p.name)}</td><td><strong style="color:var(--brew)">${p.uni}</strong></td><td><span class="pill ${pillClass(p.tier)}">${p.tier}</span></td><td class="r">${S.dayData[di]?p.byDay[di]:'—'}</td><td class="r">${p.extByDay[di]||'—'}</td><td class="r" style="background:var(--foam); font-weight:bold; color:var(--alta-c)">${p.allocDay[di]} ${p.uni}</td></tr>`).join('');
+  }
+}
+
+function renderChart() {
+  const top15 = S.products.slice(0,15); if (CHARTS.top) CHARTS.top.destroy();
+  const ctx = document.getElementById('chartTop');
+  if (ctx && top15.length) {
+    CHARTS.top = new Chart(ctx, {
+      type: 'bar', data: { labels: top15.map(p => cap(p.name).slice(0,12)), datasets: [{ data:top15.map(p=>p.projWeek), backgroundColor:top15.map(p=>barColor(p.tier)) }] },
+      options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}} }
+    });
+  }
+}
+
+function exportCSV() { _dlCSV(S.products.map(p=>[cap(p.name),p.uni,p.metaDay,p.projWeek]), 'producao.csv'); }
+function exportRomaneio() { _dlCSV(S.products.map(p=>[cap(p.name),p.uni,p.metaDay,p.satMeta]), 'romaneio.csv'); }
+function _dlCSV(rows,name) { const csv=rows.map(r=>r.map(c=>'"'+String(c)+'"').join(',')).join('\n'); const blob=new Blob(['\uFEFF'+csv],{type:'text/csv'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=name; a.click(); }
+function resetAll() { localStorage.removeItem('bw_v3_state'); localStorage.removeItem('bw_medidas_db'); location.reload(); }
+
+renderCards(); setThisWeek(); loadSaved();
+</script>
+</body>
+</html>
