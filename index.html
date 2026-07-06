@@ -207,13 +207,10 @@ tfoot td.r{text-align:right}
    REGRAS EXCLUSIVAS DE IMPRESSÃO (CTRL+P / SALVAR COMO PDF DO NAVEGADOR)
    ========================================================================== */
 @media print {
-  /* Oculta absolutamente tudo que não seja o cronograma */
   body, html, .page { background: #fff !important; color: #000 !important; padding: 0 !important; margin: 0 !important; }
   .topbar, .setup-card, .import-panel, .sec, .days-grid, #critPanel, .kpi-row, .disclaimer, .bk-row, .view-tabs, #chartCard, #viewLbl {
     display: none !important;
   }
-  
-  /* Mantém apenas a div do cronograma visível e remove bordas arredondadas/sombras para impressão limpa */
   .print-target {
     display: block !important;
     position: absolute;
@@ -222,8 +219,6 @@ tfoot td.r{text-align:right}
     box-shadow: none !important;
     background: #fff !important;
   }
-  
-  /* Garante uma boa leitura dos textos e tabelas no papel */
   table { width: 100% !important; border: 1px solid #000 !important; }
   thead th { background: #0D2137 !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   tbody td { border-bottom: 1px solid #ddd !important; color: #000 !important; }
@@ -249,7 +244,6 @@ tfoot td.r{text-align:right}
 
 <div class="page">
 
-  <!-- SETUP -->
   <div class="card setup-card">
     <div class="setup-row">
       <span class="slabel">Semana:</span>
@@ -265,7 +259,6 @@ tfoot td.r{text-align:right}
       <span class="minfo">Aplicada sobre a média real. Sábado produz ×2 (cobre domingo — folga da equipe).</span>
     </div>
     
-    <!-- GERENCIADOR DE MEDIDAS -->
     <hr style="border:0; border-top:1px dashed var(--border); margin: 12px 0;">
     <button class="btn config-toggle-btn" onclick="toggleConfigPanel()">⚙️ Configurar Unidades de Medida (Fatores)</button>
     <div id="configPanel" style="display:none;">
@@ -274,7 +267,6 @@ tfoot td.r{text-align:right}
     </div>
   </div>
 
-  <!-- IMPORT PANEL -->
   <div class="card import-panel">
     <div class="sec" style="margin-bottom:.7rem">📥 Importar Romaneios Externos</div>
     <div class="import-grid">
@@ -293,23 +285,20 @@ tfoot td.r{text-align:right}
         </div>
       </div>
       <div class="import-hint">
-        <strong>💡 Conversão de Medidas Automatizada:</strong> O sistema memoriza o que você configurar acima. Os itens só aparecem na listagem após serem processados em um anexo ou texto colado.
+        <strong>💡 Consolidação Ativada:</strong> Itens como "Steak Ancho", "Ancho Combinado" ou "Prep Ancho" serão agrupados e somados automaticamente sob o nome principal unificado!
       </div>
       <div class="chip-row" id="chipRow"></div>
     </div>
   </div>
 
-  <!-- DAY CARDS -->
   <div class="sec">Upload de vendas por dia — CSVs do dashboard</div>
   <div class="days-grid" id="daysGrid"></div>
 
-  <!-- CRITICAL -->
   <div class="crit" id="critPanel" style="display:none">
     <div class="crit-title">🔥 Itens de volume crítico (meta diária > 40 un/kg com margem)</div>
     <div class="crit-list" id="critList"></div>
   </div>
 
-  <!-- DASHBOARD -->
   <div id="dashboard" style="display:none">
     <div class="kpi-row" id="kpiRow"></div>
     <div class="disclaimer" id="disclaBox"></div>
@@ -321,7 +310,6 @@ tfoot td.r{text-align:right}
     </div>
     <div class="view-tabs" id="viewTabs"></div>
     
-    <!-- AREA ENCAPSULADA QUE SERÁ IMPRESSA -->
     <div class="table-wrap print-target">
       <table><thead id="thead"></thead><tbody id="tbody"></tbody><tfoot><tr id="tfoot"></tr></tfoot></table>
     </div>
@@ -338,7 +326,6 @@ tfoot td.r{text-align:right}
   </div>
 </div>
 
-<!-- MODAL -->
 <div class="modal-overlay" id="dateModal">
   <div class="modal-box">
     <div class="modal-title">📅 Confirmar Dia de Destino do Romaneio</div>
@@ -366,6 +353,27 @@ const IGNORADOS = new Set([
   'arroz branco', 'batata portuguesa', 'feijao preto',
   'schnitzel', 'anjo', 'mignon'
 ].map(s => s.trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'')));
+
+// Lista de palavras chave comuns conhecidas para unificação inteligente
+const RADICAIS_CONHECIDOS = ['ANCHO', 'FRALDINHA', 'GALETo', 'PASTEL DE QUEIJO', 'PASTEL QUEIJO', 'CROQUETE COSTELA', 'DADINHO TAPIOCA', 'BURACO QUENTE', 'TORRESMO'];
+
+function extrairNomeUnificado(rawName) {
+  let name = rawName.toUpperCase().trim();
+  // Remove prefixos operacionais comuns
+  name = name.replace(/^(PREP\s+DE\s+|PREP\s+|PREPARACAO\s+DE\s+|PREPARACAO\s+|MENU\s+KIDS\s+)/g, '');
+  name = name.replace(/(COMBINADO|PORCAO|BUFFET|PRONTO|MARINADO|FATIAS|STEAK|MASSA\s+DE|RECHEIO)/g, '').trim();
+  name = name.replace(/\s+/g, ' ').trim();
+  
+  // Procura correspondência inteligente com os radicais mais importantes
+  for (const rad of RADICAIS_CONHECIDOS) {
+    if (name.includes(rad) || rad.includes(name)) {
+      return rad + " (CONSOLIDADO)";
+    }
+  }
+  
+  if (name.length < 3) return rawName.toUpperCase().trim();
+  return name;
+}
 
 function isIgnorado(name) { 
   if(!name) return true;
@@ -615,17 +623,26 @@ function processData() {
   if (!loadedIdx.length && !externals.length) { S.products = []; return; }
   const map = {}, dayTotals = [0,0,0,0,0,0], mult = 1 + margin/100;
   
+  // Agrupa os dados dos arquivos diários aplicando a regra de unificação de nomes
   loadedIdx.forEach(idx => {
     dayData[idx].forEach(r => {
-      const name = r.Produto.trim(), key = name.toUpperCase(); if(isIgnorado(name)) return;
-      if (!map[key]) map[key] = { name, byDay:[0,0,0,0,0,0], extByDay:[0,0,0,0,0,0], totalQtd:0 };
+      const originalName = r.Produto.trim(); if(isIgnorado(originalName)) return;
+      const unifiedName = extrairNomeUnificado(originalName);
+      const key = unifiedName.toUpperCase();
+      
+      if (!map[key]) map[key] = { name: unifiedName, byDay:[0,0,0,0,0,0], extByDay:[0,0,0,0,0,0], totalQtd:0 };
       map[key].byDay[idx] += parseFloat(r.Qtd||0); map[key].totalQtd += parseFloat(r.Qtd||0);
     });
   });
+
+  // Agrupa os dados dos romaneios externos com a mesma inteligência de unificação
   externals.forEach(ext => {
     ext.rows.forEach(r => {
-      const name = r.Produto.trim(), key = name.toUpperCase(); if(isIgnorado(name)) return;
-      if (!map[key]) map[key] = { name, byDay:[0,0,0,0,0,0], extByDay:[0,0,0,0,0,0], totalQtd:0 };
+      const originalName = r.Produto.trim(); if(isIgnorado(originalName)) return;
+      const unifiedName = extrairNomeUnificado(originalName);
+      const key = unifiedName.toUpperCase();
+      
+      if (!map[key]) map[key] = { name: unifiedName, byDay:[0,0,0,0,0,0], extByDay:[0,0,0,0,0,0], totalQtd:0 };
       map[key].extByDay[ext.targetIdx] += parseFloat(r.Qtd||0); map[key].totalQtd += parseFloat(r.Qtd||0);
     });
   });
@@ -651,59 +668,7 @@ function renderDashboard() {
   
   if (!S.products.length) { document.getElementById('dashboard').style.display = 'none'; document.getElementById('emptyState').style.display = 'block'; return; }
   document.getElementById('dashboard').style.display = 'block'; document.getElementById('emptyState').style.display = 'none';
-  const { products, dayTotals, weekDates } = S;
+  const { products, dayTotals } = S;
   
   document.getElementById('kpiRow').innerHTML = `
-    <div class="kpi blue"><div class="kpi-l">Volume Estimado</div><div class="kpi-v">${products.reduce((s,p)=>s+p.projWeek,0).toFixed(1)}</div><div class="kpi-s">Unidades combinadas</div></div>
-    <div class="kpi brew"><div class="kpi-l">Média Diária</div><div class="kpi-v">${products.reduce((s,p)=>s+p.metaDay,0).toFixed(1)}</div><div class="kpi-s">por dia ativo</div></div>
-    <div class="kpi green"><div class="kpi-l">Meta Sábado (×2)</div><div class="kpi-v">${dayTotals[5].toFixed(1)}</div><div class="kpi-s">Cobre Sáb + Dom</div></div>
-    <div class="kpi"><div class="kpi-l">Produtos Ativos</div><div class="kpi-v">${products.length}</div><div class="kpi-s">excluindo bloqueados</div></div>`;
-
-  document.getElementById('disclaBox').innerHTML = `<strong>Filtro de Production Central Ativo:</strong> Itens de montagem local e revenda higienizados com sucesso.`;
-
-  document.getElementById('bkRow').innerHTML = [0,1,2,3,4,5,6].map(i => {
-    if (i===6) return `<div class="bk dom"><div class="bk-day">Dom</div><div class="bk-val">😴</div></div>`;
-    return `<div class="bk ${i===5?'sat':''}"><div class="bk-day">${DSHORT[i]}</div><div class="bk-val">${(dayTotals[i]||0).toFixed(1)}</div></div>`;
-  }).join('');
-
-  renderViewTabs(); renderTable(); renderChart();
-}
-
-function renderViewTabs() {
-  const tabs = [{ id:'geral', label:'📋 Geral', cls:'act' }, ...DSHORT.slice(0,6).map((s,i) => ({ id:String(i), label:`🗓 ${s}`, cls:'act-day' }))];
-  document.getElementById('viewTabs').innerHTML = tabs.map(t => `<button class="vt ${S.view===t.id ? t.cls : ''}" onclick="switchView('${t.id}')">${t.label}</button>`).join('');
-}
-function switchView(v) { S.view = v; renderViewTabs(); renderTable(); }
-
-function renderTable() {
-  const { products, view } = S; const thead = document.getElementById('thead'), tbody = document.getElementById('tbody');
-  if (view === 'geral') {
-    thead.innerHTML = `<tr><th>Produto</th><th>U.M.</th><th>Perfil</th><th class="r">Total Vendas</th><th class="r">Meta Diária</th><th class="r col-proj">Proj. Semana</th><th class="r col-sat">Sábado (×2)</th></tr>`;
-    tbody.innerHTML = products.map(p => `<tr><td style="font-weight:600">${cap(p.name)}</td><td><strong style="color:var(--brew)">${p.uni}</strong></td><td><span class="pill ${pillClass(p.tier)}">${p.tier}</span></td><td class="r">${p.totalQtd}</td><td class="r">${p.metaDay}</td><td class="r" style="font-weight:bold">${p.projWeek.toFixed(1)}</td><td class="r">${p.satMeta.toFixed(1)}</td></tr>`).join('');
-  } else {
-    const di = parseInt(view);
-    thead.innerHTML = `<tr><th>Produto</th><th>U.M.</th><th>Perfil</th><th class="r">Base Dia (un)</th><th class="r col-ext">Ext.</th><th class="r col-proj">👉 PRODUÇÃO HOJE</th></tr>`;
-    tbody.innerHTML = products.filter(p => p.allocDay[di] > 0).map(p => `<tr><td style="font-weight:700">${cap(p.name)}</td><td><strong style="color:var(--brew)">${p.uni}</strong></td><td><span class="pill ${pillClass(p.tier)}">${p.tier}</span></td><td class="r">${S.dayData[di]?p.byDay[di]:'—'}</td><td class="r">${p.extByDay[di]||'—'}</td><td class="r" style="background:var(--foam); font-weight:bold; color:var(--alta-c)">${p.allocDay[di]} ${p.uni}</td></tr>`).join('');
-  }
-}
-
-function renderChart() {
-  const top15 = S.products.slice(0,15); if (CHARTS.top) CHARTS.top.destroy();
-  const ctx = document.getElementById('chartTop');
-  if (ctx && top15.length) {
-    CHARTS.top = new Chart(ctx, {
-      type: 'bar', data: { labels: top15.map(p => cap(p.name).slice(0,12)), datasets: [{ data:top15.map(p=>p.projWeek), backgroundColor:top15.map(p=>barColor(p.tier)) }] },
-      options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}} }
-    });
-  }
-}
-
-function exportCSV() { _dlCSV(S.products.map(p=>[cap(p.name),p.uni,p.metaDay,p.projWeek]), 'producao.csv'); }
-function exportRomaneio() { _dlCSV(S.products.map(p=>[cap(p.name),p.uni,p.metaDay,p.satMeta]), 'romaneio.csv'); }
-function _dlCSV(rows,name) { const csv=rows.map(r=>r.map(c=>'"'+String(c)+'"').join(',')).join('\n'); const blob=new Blob(['\uFEFF'+csv],{type:'text/csv'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=name; a.click(); }
-function resetAll() { localStorage.removeItem('bw_v3_state'); localStorage.removeItem('bw_medidas_db'); location.reload(); }
-
-renderCards(); setThisWeek(); loadSaved();
-</script>
-</body>
-</html>
+    <div class="kpi blue"><div class="kpi-l">Volume Estimado</div><div class="kpi-v">${products.reduce((s,p)=>s+p
