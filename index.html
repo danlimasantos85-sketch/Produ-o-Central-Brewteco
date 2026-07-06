@@ -67,7 +67,7 @@ input[type=range]{width:130px;accent-color:var(--brew)}
 
 /* CONFIGURAÇÃO DE MEDIDAS */
 .config-toggle-btn { background: var(--surface3); color: var(--navy); border: 1px solid var(--border-md); margin-bottom: 1rem; }
-.config-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; margin-top: 10px; max-height: 200px; overflow-y: auto; padding: 5px; border: 1px solid var(--border); border-radius: 6px; }
+.config-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; margin-top: 10px; max-height: 250px; overflow-y: auto; padding: 5px; border: 1px solid var(--border); border-radius: 6px; }
 .config-item { background: var(--surface2); padding: 8px; border-radius: 6px; display: flex; flex-direction: column; gap: 4px; border: 0.5px solid var(--border-md); }
 .config-item-name { font-weight: 600; font-size: 11px; color: var(--navy); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .config-inputs { display: flex; gap: 4px; }
@@ -203,9 +203,6 @@ tfoot td.r{text-align:right}
   .chip-row{grid-column:span 1}
 }
 
-/* ==========================================================================
-   REGRAS EXCLUSIVAS DE IMPRESSÃO (CTRL+P / SALVAR COMO PDF DO NAVEGADOR)
-   ========================================================================== */
 @media print {
   body, html, .page { background: #fff !important; color: #000 !important; padding: 0 !important; margin: 0 !important; }
   .topbar, .setup-card, .import-panel, .sec, .days-grid, #critPanel, .kpi-row, .disclaimer, .bk-row, .view-tabs, #chartCard, #viewLbl {
@@ -262,7 +259,7 @@ tfoot td.r{text-align:right}
     <hr style="border:0; border-top:1px dashed var(--border); margin: 12px 0;">
     <button class="btn config-toggle-btn" onclick="toggleConfigPanel()">⚙️ Configurar Unidades de Medida (Fatores)</button>
     <div id="configPanel" style="display:none;">
-      <div style="font-size:11px; color:var(--muted); margin-bottom: 8px;">Defina a unidade e o peso/volume de 1 porção vendida. As configurações ficam salvas automaticamente.</div>
+      <div style="font-size:11px; color:var(--muted); margin-bottom: 8px;">Defina o fator para cada nomenclatura original recebida das lojas (vendas e romaneios externos). Apenas itens bloqueados ficam ocultos.</div>
       <div class="config-grid" id="configGrid"></div>
     </div>
   </div>
@@ -293,11 +290,6 @@ tfoot td.r{text-align:right}
 
   <div class="sec">Upload de vendas por dia — CSVs do dashboard</div>
   <div class="days-grid" id="daysGrid"></div>
-
-  <div class="crit" id="critPanel" style="display:none">
-    <div class="crit-title">🔥 Itens de volume crítico (meta diária > 40 un/kg com margem)</div>
-    <div class="crit-list" id="critList"></div>
-  </div>
 
   <div id="dashboard" style="display:none">
     <div class="kpi-row" id="kpiRow"></div>
@@ -343,7 +335,6 @@ tfoot td.r{text-align:right}
 const NOISE_WORDS = new Set(['produto','item','descricao','qtd','quantidade','quant','total','subtotal','valor','preco','unidade','un','pc','pcs','loja','data','romaneio','producao','geral','observacao','categoria','cat','litros','litro','kg','g','ml','l','embalagem','ref','codigo','nome','descr','und','nro','nr','seq','no','estornos','grupos','grupo','eventos','evento','bar']);
 const SKIP_START = ['total','subtotal','geral','observ'];
 
-// Lista consolidada e expandida de itens bloqueados (não entram na produção da Cozinha Central)
 const IGNORADOS = new Set([
   'linguica toscana', 'batata frita', 'file tilapia', 'bacon burguer', 
   'caldinho feijao', 'bobo camarao', 'batata cheddar bacon', 'burger carioquissimo burguer', 
@@ -357,373 +348,13 @@ const IGNORADOS = new Set([
   'combo bolinhos 4 unidades', 'galeto combinado'
 ].map(s => s.trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'')));
 
-// Lista de palavras chave comuns conhecidas para unificação inteligente
 const RADICAIS_CONHECIDOS = ['ANCHO', 'FRALDINHA', 'GALETo', 'PASTEL DE QUEIJO', 'PASTEL QUEIJO', 'CROQUETE COSTELA', 'DADINHO TAPIOCA', 'BURACO QUENTE', 'TORRESMO'];
 
 function extrairNomeUnificado(rawName) {
   let name = rawName.toUpperCase().trim();
-  // Remove prefixos e sufixos operacionais comuns
   name = name.replace(/^(PREP\s+DE\s+|PREP\s+|PREPARACAO\s+DE\s+|PREPARACAO\s+|MENU\s+KIDS\s+)/g, '');
   name = name.replace(/(COMBINADO|PORCAO|BUFFET|PRONTO|MARINADO|FATIAS|STEAK|MASSA\s+DE|RECHEIO)/g, '').trim();
   name = name.replace(/\s+/g, ' ').trim();
   
-  // Procura correspondência inteligente com os radicais mais importantes
   for (const rad of RADICAIS_CONHECIDOS) {
-    if (name.includes(rad) || rad.includes(name)) {
-      return rad + " (CONSOLIDADO)";
-    }
-  }
-  
-  if (name.length < 3) return rawName.toUpperCase().trim();
-  return name;
-}
-
-function isIgnorado(name) { 
-  if(!name) return true;
-  const n = name.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-  return IGNORADOS.has(n); 
-}
-
-let MEDIDAS_DB = {};
-
-function _norm(s) { return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z]/g,''); }
-function _isNoise(token) {
-  if (!token || token.trim().length < 2) return true;
-  const n = _norm(token);
-  if (NOISE_WORDS.has(n) || SKIP_START.some(p => n.startsWith(p))) return true;
-  if (/^[\d.,R$%\s/\-]+$/.test(token)) return true;
-  return false;
-}
-function _cleanNum(s) {
-  if (s == null) return NaN;
-  s = String(s).trim().replace(/\s/g,'').replace(/[R$]/gi,'').replace(/\b(unidades?|un|kg|pcs?|g|ml)\s*$/i,'').trim();
-  if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(s)) s = s.replace(/\./g,'').replace(',','.'); else s = s.replace(',','.');
-  const n = parseFloat(s);
-  return (isNaN(n) || n <= 0 || n >= 10000) ? NaN : n;
-}
-function _detectDelim(text) {
-  const sample = text.slice(0,3000);
-  return ['\t',';',',','|'].map(d => ({ d, n:(sample.match(new RegExp('\\'+d,'g'))||[]).length })).sort((a,b)=>b.n-a.n).find(x => x.n >= 3)?.d || null;
-}
-
-function detectDateInText(text) {
-  const matchIso = text.match(/\b(202\d)[-/](0[1-9]|1[0-2])[-/](0[1-9]|[12]\d|3[01])\b/);
-  if (matchIso) return `${matchIso[1]}-${matchIso[2]}-${matchIso[3]}`;
-  const matchBr = text.match(/\b(0[1-9]|[12]\d|3[01])\/(0[1-9]|1[0-2])\/(202\d)\b/);
-  if (matchBr) return `${matchBr[3]}-${matchBr[2]}-${matchBr[1]}`;
-  return null;
-}
-
-function parseUniversal(rawText) {
-  let text = rawText.replace(/^\uFEFF/,'');
-  const detected = detectDateInText(text);
-  if (detected && !document.getElementById('weekStart').value) {
-    document.getElementById('weekStart').value = detected;
-    setWeek();
-  }
-  const lines = text.split(/\r?\n|\r/);
-  const delim = _detectDelim(text);
-  const results = [];
-  if (delim) {
-    let nameIdx = -1, qtyIdx = -1, headerFound = false;
-    for (const line of lines) {
-      const raw = line.trim(); if (!raw) continue;
-      const cells = raw.split(delim).map(c => c.replace(/^["'\s]+|["'\s]+$/g,'').trim());
-      if (!headerFound) {
-        const normed = cells.map(_norm);
-        const ni = normed.findIndex(c => ['produto','item','descricao','nome'].some(k => c===k||c.startsWith(k)));
-        const qi = normed.findIndex(c => ['qtd','quant','quantidade'].some(k => c===k||c.startsWith(k)));
-        if (ni >= 0 && qi >= 0) { nameIdx = ni; qtyIdx = qi; headerFound = true; continue; }
-      }
-      if (nameIdx < 0 || cells.length <= qtyIdx) continue;
-      const name = cells[nameIdx], qty = _cleanNum(cells[qtyIdx]);
-      if (!_isNoise(name) && !isNaN(qty) && !isIgnorado(name)) results.push({ Produto: name, Qtd: qty });
-    }
-    if (results.length >= 1) return results.filter(r => !_isNoise(r.Produto) && !isIgnorado(r.Produto));
-  }
-  const rSep = /^(.+?)\s*[-–—:]\s*(\d[\d.,]*)\s*/i;
-  for (const line of lines) {
-    const raw = line.trim(); if (!raw || raw.length < 4) continue;
-    let name='', qty=NaN, m1 = raw.match(rSep);
-    if (m1) { name=m1[1].trim(); qty=_cleanNum(m1[2]); }
-    if (!_isNoise(name) && !isNaN(qty) && name.length > 2 && !isIgnorado(name)) results.push({ Produto: name, Qtd: qty });
-  }
-  return results;
-}
-
-const DAYS = ['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo'];
-const DSHORT = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
-
-let S = {
-  weekDates: ['','','','','','',''],
-  dayData: [null,null,null,null,null,null],
-  externals: [],
-  margin: 30,
-  view: 'geral',
-  products: [],
-  dayTotals: [0,0,0,0,0,0],
-  nLoaded: 0,
-  loadedIdx: [],
-};
-let CHARTS = { top: null };
-let pendingImport = null;
-
-function save() {
-  if (!S.weekDates[0]) return;
-  localStorage.setItem('bw_v3_state', JSON.stringify({ weekDates: S.weekDates, margin: S.margin, dayData: S.dayData, externals: S.externals }));
-  localStorage.setItem('bw_medidas_db', JSON.stringify(MEDIDAS_DB));
-}
-
-function loadSaved() {
-  const savedMedidas = localStorage.getItem('bw_medidas_db');
-  if (savedMedidas) { try { MEDIDAS_DB = JSON.parse(savedMedidas); } catch(e){} }
-  const raw = localStorage.getItem('bw_v3_state'); if (!raw) return;
-  try {
-    const p = JSON.parse(raw);
-    S.weekDates = p.weekDates || S.weekDates;
-    S.margin = p.margin || 30;
-    S.dayData = p.dayData || [null,null,null,null,null,null];
-    S.externals = p.externals || [];
-    document.getElementById('marginSlider').value = S.margin;
-    document.getElementById('marginDisp').textContent = '+' + S.margin + '%';
-    if (S.weekDates[0]) document.getElementById('weekBadge').textContent = S.weekDates[0]+' – '+S.weekDates[5];
-    renderCards(); renderChips(); renderDashboard();
-  } catch(e) {}
-}
-
-function setThisWeek() { document.getElementById('weekStart').value = new Date().toISOString().slice(0,10); setWeek(); }
-function setWeek() {
-  const v = document.getElementById('weekStart').value; if (!v) return;
-  const base = new Date(v+'T12:00:00'), diff = base.getDay()===0 ? -6 : 1-base.getDay(), mon = new Date(base); mon.setDate(base.getDate()+diff);
-  for (let i=0; i<7; i++) { const d = new Date(mon); d.setDate(mon.getDate()+i); S.weekDates[i] = d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}); }
-  document.getElementById('weekBadge').textContent = S.weekDates[0]+' – '+S.weekDates[5];
-  save(); renderCards(); renderDashboard();
-}
-function onMargin(v) { S.margin = parseInt(v); document.getElementById('marginDisp').textContent = '+'+v+'%'; save(); renderDashboard(); }
-
-function toggleConfigPanel() {
-  const p = document.getElementById('configPanel');
-  p.style.display = p.style.display === 'none' ? 'block' : 'none';
-  if(p.style.display === 'block') renderConfigGrid();
-}
-
-function renderConfigGrid() {
-  const grid = document.getElementById('configGrid');
-  let chaves = new Set(S.products.map(p => p.name.toUpperCase()));
-  
-  if (chaves.size === 0) {
-    grid.innerHTML = `<div style="grid-column: span 3; text-align:center; padding:15px; color:var(--muted); font-size:12px;">Nenhum item importado ainda. Faça upload para configurar fatores.</div>`;
-    return;
-  }
-
-  grid.innerHTML = Array.from(chaves).filter(key => !isIgnorado(key)).sort().map(key => {
-    const item = MEDIDAS_DB[key] || { uni: 'un', fator: 1.0 };
-    return `
-      <div class="config-item">
-        <div class="config-item-name" title="${key}">${cap(key)}</div>
-        <div class="config-inputs">
-          <select onchange="updateMedida('${key}', 'uni', this.value)">
-            <option value="un" ${item.uni==='un'?'selected':''}>un</option>
-            <option value="kg" ${item.uni==='kg'?'selected':''}>kg</option>
-            <option value="L" ${item.uni==='L'?'selected':''}>L</option>
-          </select>
-          <input type="number" step="0.001" min="0.001" value="${item.fator}" onchange="updateMedida('${key}', 'fator', this.value)">
-        </div>
-      </div>`;
-  }).join('');
-}
-
-function updateMedida(key, field, value) {
-  if (!MEDIDAS_DB[key]) MEDIDAS_DB[key] = { uni: 'un', fator: 1.0 };
-  if (field === 'uni') MEDIDAS_DB[key].uni = value;
-  if (field === 'fator') MEDIDAS_DB[key].fator = Math.max(0.001, parseFloat(value) || 1.0);
-  save(); renderDashboard();
-}
-
-function openDateModal(label, rows, initialIdx) {
-  pendingImport = { label, rows: rows.filter(r => !isIgnorado(r.Produto)), selectedIdx: initialIdx };
-  document.getElementById('modalFilename').textContent = label;
-  const grid = document.getElementById('modalSelectGrid');
-  grid.innerHTML = [0,1,2,3,4,5].map(i => `
-    <div class="modal-opt ${i === initialIdx ? 'selected' : ''}" onclick="selectModalDay(${i})" id="opt-day-${i}">
-      <div class="opt-day">${DSHORT[i]}</div>
-      <div class="opt-date">${S.weekDates[i] || '—'}</div>
-    </div>`).join('');
-  document.getElementById('dateModal').classList.add('active');
-}
-function selectModalDay(idx) {
-  if (!pendingImport) return; pendingImport.selectedIdx = idx;
-  [0,1,2,3,4,5].forEach(i => document.getElementById(`opt-day-${i}`).classList.remove('selected'));
-  document.getElementById(`opt-day-${idx}`).classList.add('selected');
-}
-function closeDateModal() { pendingImport = null; document.getElementById('dateModal').classList.remove('active'); }
-function confirmDateModal() {
-  if (!pendingImport) return;
-  S.externals.push({ id: Date.now()+'_'+Math.random().toString(36).slice(2,6), label: pendingImport.label.slice(0,20), targetIdx: pendingImport.selectedIdx, rows: pendingImport.rows });
-  save(); renderChips(); renderDashboard(); closeDateModal();
-}
-
-function handleExtFiles(input) {
-  const files = [...input.files]; if (!files.length) return;
-  files.forEach(file => {
-    const reader = new FileReader();
-    reader.onload = e => {
-      const rows = parseUniversal(e.target.result);
-      if (rows.length) openDateModal(file.name, rows, 5);
-    };
-    reader.readAsText(file, 'UTF-8');
-  });
-  input.value = '';
-}
-function processPaste() {
-  const text = document.getElementById('pasteInput').value;
-  if (!text.trim()) return;
-  const rows = parseUniversal(text);
-  if (rows.length) { document.getElementById('pasteInput').value = ''; openDateModal('Texto Colado', rows, 5); }
-}
-function removeExt(id) { S.externals = S.externals.filter(x => x.id !== id); save(); renderChips(); renderDashboard(); }
-function renderChips() {
-  document.getElementById('chipRow').innerHTML = S.externals.map(x => `
-    <div class="chip"><span>🏢 ${x.label}</span><span class="tag">${S.weekDates[x.targetIdx]||DSHORT[x.targetIdx]}</span><button onclick="removeExt('${x.id}')">✕</button></div>`).join('');
-}
-
-function renderCards() {
-  const grid = document.getElementById('daysGrid'); grid.innerHTML = '';
-  for (let i=0; i<6; i++) {
-    const loaded = !!S.dayData[i], sat = i===5;
-    const qtd = loaded ? S.dayData[i].reduce((s,r)=>isIgnorado(r.Produto)?s:s+(parseFloat(r.Qtd)||0),0) : 0;
-    const card = document.createElement('div'); card.className = 'day-card'+(sat?' sat':'')+(loaded?' loaded':'');
-    card.innerHTML = `
-      ${loaded?`<button class="dc-rm" onclick="removeDay(event,${i})">✕</button>`:''}
-      <input type="file" accept=".csv,.txt,.tsv" onchange="loadDayFile(${i},this)" ${loaded?'style="display:none"':''}>
-      <div class="dc-icon">${loaded?'✅':sat?'📦':'📂'}</div>
-      <div class="dc-name">${DSHORT[i]}</div>
-      <div class="dc-date">${S.weekDates[i]||'—'}</div>
-      ${loaded ? `<div class="dc-q">${qtd} un</div>` : ''}`;
-    grid.appendChild(card);
-  }
-}
-
-function loadDayFile(idx, input) {
-  const file = input.files[0]; if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    const rows = parseUniversal(e.target.result);
-    if (rows.length) { S.dayData[idx] = rows.filter(r => !isIgnorado(r.Produto)); save(); renderCards(); renderDashboard(); }
-  };
-  reader.readAsText(file, 'UTF-8');
-}
-function removeDay(evt, idx) { evt.stopPropagation(); S.dayData[idx] = null; save(); renderCards(); renderDashboard(); }
-
-function getTier(avg) { if (avg >= 20) return 'Alta demanda'; if (avg >= 10) return 'Demanda média'; return 'Pontual'; }
-function pillClass(t) { return {'Alta demanda':'p-alta','Demanda média':'p-media'}[t]||'p-pont'; }
-function barColor(t) { return {'Alta demanda':'#2a78d6','Demanda média':'#1baf7a'}[t]||'#888780'; }
-function cap(s) { return (s||'').toLowerCase().replace(/\b\w/g,c=>c.toUpperCase()); }
-
-function processData() {
-  const { dayData, externals, margin } = S;
-  const loadedIdx = dayData.map((d,i)=>d?i:null).filter(i=>i!==null);
-  if (!loadedIdx.length && !externals.length) { S.products = []; return; }
-  const map = {}, dayTotals = [0,0,0,0,0,0], mult = 1 + margin/100;
-  
-  // Agrupa os dados dos arquivos diários aplicando a regra de unificação
-  loadedIdx.forEach(idx => {
-    dayData[idx].forEach(r => {
-      const originalName = r.Produto.trim(); if(isIgnorado(originalName)) return;
-      const unifiedName = extrairNomeUnificado(originalName);
-      const key = unifiedName.toUpperCase();
-      
-      if (!map[key]) map[key] = { name: unifiedName, byDay:[0,0,0,0,0,0], extByDay:[0,0,0,0,0,0], totalQtd:0 };
-      map[key].byDay[idx] += parseFloat(r.Qtd||0); map[key].totalQtd += parseFloat(r.Qtd||0);
-    });
-  });
-
-  // Agrupa os dados dos romaneios externos com a mesma inteligência de unificação
-  externals.forEach(ext => {
-    ext.rows.forEach(r => {
-      const originalName = r.Produto.trim(); if(isIgnorado(originalName)) return;
-      const unifiedName = extrairNomeUnificado(originalName);
-      const key = unifiedName.toUpperCase();
-      
-      if (!map[key]) map[key] = { name: unifiedName, byDay:[0,0,0,0,0,0], extByDay:[0,0,0,0,0,0], totalQtd:0 };
-      map[key].extByDay[ext.targetIdx] += parseFloat(r.Qtd||0); map[key].totalQtd += parseFloat(r.Qtd||0);
-    });
-  });
-  
-  S.products = Object.values(map).map(p => {
-    const key = p.name.toUpperCase(), config = MEDIDAS_DB[key] || { uni: 'un', fator: 1.0 };
-    const dp = Math.max(loadedIdx.filter(i => p.byDay[i]>0).length, 1), avgReal = p.totalQtd / dp;
-    const metaDayPorcoes = Math.ceil(avgReal * mult), metaDay = parseFloat((metaDayPorcoes * config.fator).toFixed(2));
-    const allocDay = [0,0,0,0,0,0];
-    for (let i=0; i<6; i++) {
-      const somaBaseDia = p.byDay[i] + p.extByDay[i];
-      const base = S.dayData[i] ? Math.ceil(somaBaseDia * mult) : (i===5 ? Math.ceil((avgReal + p.extByDay[i])*mult)*2 : Math.ceil((avgReal + p.extByDay[i])*mult));
-      allocDay[i] = parseFloat((base * config.fator).toFixed(2)); dayTotals[i] += allocDay[i];
-    }
-    return { ...p, avgReal, metaDay, satMeta:metaDay*2, projWeek: allocDay.reduce((a,b)=>a+b,0), allocDay, tier: getTier(avgReal), uni: config.uni };
-  }).sort((a,b) => b.projWeek - a.projWeek);
-  S.dayTotals = dayTotals.map(v => parseFloat(v.toFixed(2)));
-}
-
-function renderDashboard() {
-  processData();
-  if (document.getElementById('configPanel').style.display === 'block') renderConfigGrid();
-  
-  if (!S.products.length) { document.getElementById('dashboard').style.display = 'none'; document.getElementById('emptyState').style.display = 'block'; return; }
-  document.getElementById('dashboard').style.display = 'block'; document.getElementById('emptyState').style.display = 'none';
-  const { products, dayTotals } = S;
-  
-  document.getElementById('kpiRow').innerHTML = `
-    <div class="kpi blue"><div class="kpi-l">Volume Estimado</div><div class="kpi-v">${products.reduce((s,p)=>s+p.projWeek,0).toFixed(1)}</div><div class="kpi-s">Unidades combinadas</div></div>
-    <div class="kpi brew"><div class="kpi-l">Média Diária</div><div class="kpi-v">${products.reduce((s,p)=>s+p.metaDay,0).toFixed(1)}</div><div class="kpi-s">por dia ativo</div></div>
-    <div class="kpi green"><div class="kpi-l">Meta Sábado (×2)</div><div class="kpi-v">${dayTotals[5].toFixed(1)}</div><div class="kpi-s">Cobre Sáb + Dom</div></div>
-    <div class="kpi"><div class="kpi-l">Produtos Ativos</div><div class="kpi-v">${products.length}</div><div class="kpi-s">excluindo bloqueados</div></div>`;
-
-  document.getElementById('disclaBox').innerHTML = `<strong>Filtros Avançados Aplicados:</strong> Itens operacionais, sobremesas, combos de bolinhos e guarnições de loja foram devidamente ocultados da produção central.`;
-
-  document.getElementById('bkRow').innerHTML = [0,1,2,3,4,5,6].map(i => {
-    if (i===6) return `<div class="bk dom"><div class="bk-day">Dom</div><div class="bk-val">😴</div></div>`;
-    return `<div class="bk ${i===5?'sat':''}"><div class="bk-day">${DSHORT[i]}</div><div class="bk-val">${(dayTotals[i]||0).toFixed(1)}</div></div>`;
-  }).join('');
-
-  renderViewTabs(); renderTable(); renderChart();
-}
-
-function renderViewTabs() {
-  const tabs = [{ id:'geral', label:'📋 Geral', cls:'act' }, ...DSHORT.slice(0,6).map((s,i) => ({ id:String(i), label:`🗓 ${s}`, cls:'act-day' }))];
-  document.getElementById('viewTabs').innerHTML = tabs.map(t => `<button class="vt ${S.view===t.id ? t.cls : ''}" onclick="switchView('${t.id}')">${t.label}</button>`).join('');
-}
-function switchView(v) { S.view = v; renderViewTabs(); renderTable(); }
-
-function renderTable() {
-  const { products, view } = S; const thead = document.getElementById('thead'), tbody = document.getElementById('tbody');
-  if (view === 'geral') {
-    thead.innerHTML = `<tr><th>Insumo Principal (Unificado)</th><th>U.M.</th><th>Perfil</th><th class="r">Total Vendas</th><th class="r">Meta Diária</th><th class="r col-proj">Proj. Semana</th><th class="r col-sat">Sábado (×2)</th></tr>`;
-    tbody.innerHTML = products.map(p => `<tr><td style="font-weight:600">${cap(p.name)}</td><td><strong style="color:var(--brew)">${p.uni}</strong></td><td><span class="pill ${pillClass(p.tier)}">${p.tier}</span></td><td class="r">${p.totalQtd}</td><td class="r">${p.metaDay}</td><td class="r" style="font-weight:bold">${p.projWeek.toFixed(1)}</td><td class="r">${p.satMeta.toFixed(1)}</td></tr>`).join('');
-  } else {
-    const di = parseInt(view);
-    thead.innerHTML = `<tr><th>Insumo Principal (Unificado)</th><th>U.M.</th><th>Perfil</th><th class="r">Base Dia (un)</th><th class="r col-ext">Ext.</th><th class="r col-proj">👉 PRODUÇÃO HOJE</th></tr>`;
-    tbody.innerHTML = products.filter(p => p.allocDay[di] > 0).map(p => `<tr><td style="font-weight:700">${cap(p.name)}</td><td><strong style="color:var(--brew)">${p.uni}</strong></td><td><span class="pill ${pillClass(p.tier)}">${p.tier}</span></td><td class="r">${S.dayData[di]?p.byDay[di]:'—'}</td><td class="r">${p.extByDay[di]||'—'}</td><td class="r" style="background:var(--foam); font-weight:bold; color:var(--alta-c)">${p.allocDay[di]} ${p.uni}</td></tr>`).join('');
-  }
-}
-
-function renderChart() {
-  const top15 = S.products.slice(0,15); if (CHARTS.top) CHARTS.top.destroy();
-  const ctx = document.getElementById('chartTop');
-  if (ctx && top15.length) {
-    CHARTS.top = new Chart(ctx, {
-      type: 'bar', data: { labels: top15.map(p => cap(p.name).slice(0,12)), datasets: [{ data:top15.map(p=>p.projWeek), backgroundColor:top15.map(p=>barColor(p.tier)) }] },
-      options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}} }
-    });
-  }
-}
-
-function exportCSV() { _dlCSV(S.products.map(p=>[cap(p.name),p.uni,p.metaDay,p.projWeek]), 'producao.csv'); }
-function exportRomaneio() { _dlCSV(S.products.map(p=>[cap(p.name),p.uni,p.metaDay,p.satMeta]), 'romaneio.csv'); }
-function _dlCSV(rows,name) { const csv=rows.map(r=>r.map(c=>'"'+String(c)+'"').join(',')).join('\n'); const blob=new Blob(['\uFEFF'+csv],{type:'text/csv'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=name; a.click(); }
-function resetAll() { localStorage.removeItem('bw_v3_state'); localStorage.removeItem('bw_medidas_db'); location.reload(); }
-
-renderCards(); setThisWeek(); loadSaved();
-</script>
-</body>
-</html>
+    if
