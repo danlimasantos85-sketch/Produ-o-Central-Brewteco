@@ -346,14 +346,16 @@ const RADICAIS_CONHECIDOS = ['ANCHO', 'FRALDINHA', 'GALETO', 'GURJAO', 'PASTEL D
 
 function extrairNomeUnificado(rawName) {
   let name = rawName.toUpperCase().trim();
+  name = name.normalize('NFD').replace(/[\u0300-\u036f]/g,''); // remove acentos logo no início p/ comparação robusta
   name = name.replace(/^(PREP\s+DE\s+|PREP\s+|PREPARACAO\s+DE\s+|PREPARACAO\s+)/g, '');
   name = name.replace(/(COMBINADO|PORCAO|BUFFET|PRONTO|MARINADO|FATIAS|STEAK|MASSA\s+DE|RECHEIO|LIGHT|ANIVERSARIO)/g, '').trim();
+  name = name.replace(/\b(DE|DO|DA|DOS|DAS)\b/g, ' '); // conectivos que não mudam a identidade do produto
+  name = name.replace(/\b\d+[.,]?\d*\s*(G|KG|ML|L|UN|UND)\b/g, ' '); // sufixos de peso/tamanho (ex: 250G)
   name = name.replace(/\s+/g, ' ').trim();
   
-  const nameNorm = name.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
   for (const rad of RADICAIS_CONHECIDOS) {
     const radNorm = rad.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-    if (nameNorm.includes(radNorm) || radNorm.includes(nameNorm)) {
+    if (name.includes(radNorm) || radNorm.includes(name)) {
       return rad + " (CONSOLIDADO)";
     }
   }
@@ -367,8 +369,81 @@ function isIgnorado(name) {
   return IGNORADOS.has(n); 
 }
 
-let MEDIDAS_DB = {};   // fator de conversão por NOME DE ORIGEM (venda/romaneio) -> unidade de produção
-let PRODUTO_DB = {};    // unidade de produção (kg/un/L/porcao) por INSUMO CONSOLIDADO
+// Valores padrão fixados (calibrados pela cozinha). Novos itens que não estiverem aqui
+// continuam totalmente editáveis (caem no fallback fator=1 / unidade=un already existente no código).
+const DEFAULT_PRODUTO_DB = {
+  "ANCHO (CONSOLIDADO)": { uni: 'kg' },
+  "BASE MOLHO ROTI": { uni: 'kg' },
+  "BOLINHO ARROZ": { uni: 'un' },
+  "BROWNIE": { uni: 'un' },
+  "BURACO QUENTE (CONSOLIDADO)": { uni: 'kg' },
+  "COCRETI": { uni: 'un' },
+  "COXINHA SARADA": { uni: 'un' },
+  "CROQUETE COSTELA (CONSOLIDADO)": { uni: 'un' },
+  "DADINHO TAPIOCA (CONSOLIDADO)": { uni: 'porcao' },
+  "ESPETO CARNE": { uni: 'kg' },
+  "ESPETO FRANGO": { uni: 'kg' },
+  "FEIJOADA": { uni: 'porcao' },
+  "FRALDINHA (CONSOLIDADO)": { uni: 'kg' },
+  "FRANGO ASIATICO": { uni: 'kg' },
+  "GURJAO (CONSOLIDADO)": { uni: 'kg' },
+  "MASSA BOLINHO DE ARROZ": { uni: 'un' },
+  "MASSA COCRETI CALABRESA CRUA": { uni: 'un' },
+  "MENU KIDS CARNE": { uni: 'kg' },
+  "MENU KIDS FRANGO": { uni: 'kg' },
+  "PASTEL CAMARAO": { uni: 'un' },
+  "PASTEL COSTELA": { uni: 'un' },
+  "PASTEL QUEIJO (CONSOLIDADO)": { uni: 'un' },
+  "PEITO FRANGO": { uni: 'kg' },
+  "PICADINHO": { uni: 'kg' },
+  "PICANHA": { uni: 'kg' },
+  "PROVOLONE MILANESA": { uni: 'porcao' },
+  "TORRESMO (CONSOLIDADO)": { uni: 'kg' }
+};
+
+const DEFAULT_MEDIDAS_DB = {
+  "ANCHO COMBINADO": { fator: 0.25 },
+  "BOLINHO ARROZ": { fator: 1 },
+  "BROWNIE": { fator: 1 },
+  "BROWNIE ANIVERSARIO": { fator: 1 },
+  "BURACO QUENTE BOVINO": { fator: 0.08 },
+  "COCRETI": { fator: 1 },
+  "COXINHA SARADA": { fator: 1 },
+  "CROQUETE COSTELA": { fator: 1 },
+  "DADINHO TAPIOCA": { fator: 1 },
+  "ESPETO CARNE": { fator: 0.18 },
+  "ESPETO FRANGO": { fator: 0.18 },
+  "FEIJOADA": { fator: 1 },
+  "FRALDINHA COMBINADO": { fator: 0.5 },
+  "FRANGO ASIATICO": { fator: 0.06 },
+  "GURJAO FRANGO": { fator: 0.47 },
+  "MENU KIDS CARNE": { fator: 0.1 },
+  "MENU KIDS FRANGO": { fator: 0.09 },
+  "PASTEL CAMARAO": { fator: 1 },
+  "PASTEL COSTELA": { fator: 1 },
+  "PASTEL QUEIJO": { fator: 1 },
+  "PEITO FRANGO": { fator: 0.09 },
+  "PEITO FRANGO LIGHT": { fator: 0.09 },
+  "PICADINHO": { fator: 0.1 },
+  "PICANHA": { fator: 0.5 },
+  "PICANHA COMBINADO": { fator: 0.5 },
+  "PREP BASE MOLHO ROTI": { fator: 1 },
+  "PREP FRANGO ASIATICO MARINADO": { fator: 0.06 },
+  "PREP FRANGO GURJAO MARINADO": { fator: 1 },
+  "PREP MASSA BOLINHO DE ARROZ": { fator: 1 },
+  "PREP MASSA COCRETI CALABRESA CRUA": { fator: 1 },
+  "PREP MASSA CROQUETE COSTELA": { fator: 1 },
+  "PREP MASSA DE BROWNIE": { fator: 1 },
+  "PREP PORÇÃO DADINHO DE TAPIOCA 250G": { fator: 1 },
+  "PREP TORRESMO": { fator: 1 },
+  "PROVOLONE MILANESA": { fator: 1 },
+  "STEAK ANCHO": { fator: 0.25 },
+  "TORRESMO PORCAO": { fator: 0.2 },
+  "PORÇÃO DADINHO DE TAPIOCA 250G": { fator: 1 }
+};
+
+let MEDIDAS_DB = { ...DEFAULT_MEDIDAS_DB };   // fator de conversão por NOME DE ORIGEM (venda/romaneio) -> unidade de produção
+let PRODUTO_DB = { ...DEFAULT_PRODUTO_DB };    // unidade de produção (kg/un/L/porcao) por INSUMO CONSOLIDADO
 
 const UNIDADES_PRODUCAO = { un: 'unidades', kg: 'kg', L: 'litros', porcao: 'porções' };
 const UNIDADES_ABREV = { un: 'un', kg: 'kg', L: 'L', porcao: 'porção' };
@@ -465,9 +540,9 @@ function save() {
 
 function loadSaved() {
   const savedMedidas = localStorage.getItem('bw_medidas_db');
-  if (savedMedidas) { try { MEDIDAS_DB = JSON.parse(savedMedidas); } catch(e){} }
+  if (savedMedidas) { try { MEDIDAS_DB = { ...DEFAULT_MEDIDAS_DB, ...JSON.parse(savedMedidas) }; } catch(e){} }
   const savedProdutos = localStorage.getItem('bw_produto_db');
-  if (savedProdutos) { try { PRODUTO_DB = JSON.parse(savedProdutos); } catch(e){} }
+  if (savedProdutos) { try { PRODUTO_DB = { ...DEFAULT_PRODUTO_DB, ...JSON.parse(savedProdutos) }; } catch(e){} }
   const raw = localStorage.getItem('bw_v3_state'); if (!raw) return;
   try {
     const p = JSON.parse(raw);
