@@ -222,6 +222,7 @@ tbody td.r{text-align:right;font-variant-numeric:tabular-nums}
     <button class="btn-bar" onclick="exportCSV()">⬇ CSV</button>
     <button class="btn-bar" onclick="exportRomaneio()">⬇ Romaneio</button>
     <button class="btn-bar" onclick="window.print()">🖨 Imprimir / PDF</button>
+    <button class="btn-bar" onclick="limparSemana()">↺ Limpar Semana</button>
     <button class="btn-bar" onclick="resetAll()">✕ Limpar TUDO</button>
   </div>
 </nav>
@@ -244,9 +245,15 @@ tbody td.r{text-align:right;font-variant-numeric:tabular-nums}
     </div>
     
     <hr style="border:0; border-top:1px dashed var(--border); margin: 12px 0;">
-    <button class="btn config-toggle-btn" onclick="toggleConfigPanel()">⚙️ Configurar Unidades de Medida (Fatores)</button>
+    <button class="btn config-toggle-btn" onclick="toggleConfigPanel()">⚙️ Configurar Unidades e Fatores de Conversão</button>
     <div id="configPanel" style="display:none;">
-      <div style="font-size:11px; color:var(--muted); margin-bottom: 8px;">Defina o fator para cada nomenclatura original recebida das lojas (vendas e romaneios externos). Apenas itens bloqueados ficam ocultos.</div>
+
+      <div style="font-size:12px; font-weight:700; color:var(--navy); margin-bottom:4px; margin-top:6px;">1️⃣ Unidade de Produção — por insumo consolidado</div>
+      <div style="font-size:11px; color:var(--muted); margin-bottom: 8px;">Defina em qual unidade a SUA equipe produz e recebe a informação impressa: quilos, unidades, litros ou porções. Isso vale para o insumo já consolidado (ex: "Ancho"), independente de como veio de cada origem.</div>
+      <div class="config-grid" id="configGridProdutos"></div>
+
+      <div style="font-size:12px; font-weight:700; color:var(--navy); margin-bottom:4px; margin-top:16px;">2️⃣ Fator de Conversão — por nome de origem</div>
+      <div style="font-size:11px; color:var(--muted); margin-bottom: 8px;">Cada nome bruto (de venda ou romaneio) pode representar uma quantidade diferente na unidade de produção escolhida acima. Ex: 1 "Ancho Combinado" (venda) = 0,250 kg; 1 "Prep Ancho" (romaneio) pode já vir em kg = fator 1. Configure uma vez — não muda mesmo se o nome variar levemente entre exportações, pois o insumo consolidado já reconhece as variações.</div>
       <div class="config-grid" id="configGrid"></div>
     </div>
   </div>
@@ -281,7 +288,7 @@ tbody td.r{text-align:right;font-variant-numeric:tabular-nums}
   <div id="dashboard" style="display:none">
     <div class="kpi-row" id="kpiRow"></div>
     <div class="disclaimer" id="disclaBox"></div>
-    <div class="sec">Volume total por dia da semana (ajustado por unidade de medida)</div>
+    <div class="sec">Nº de insumos com produção agendada por dia (cada um na sua própria unidade — ver tabela abaixo)</div>
     <div class="bk-row" id="bkRow"></div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
       <div class="sec" style="margin:0">Cronograma de produção</div>
@@ -335,7 +342,7 @@ const IGNORADOS = new Set([
   'combo bolinhos 4 unidades', 'galeto combinado'
 ].map(s => s.trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'')));
 
-const RADICAIS_CONHECIDOS = ['ANCHO', 'FRALDINHA', 'GALETo', 'PASTEL DE QUEIJO', 'PASTEL QUEIJO', 'CROQUETE COSTELA', 'DADINHO TAPIOCA', 'BURACO QUENTE', 'TORRESMO'];
+const RADICAIS_CONHECIDOS = ['ANCHO', 'FRALDINHA', 'GALETO', 'PASTEL DE QUEIJO', 'PASTEL QUEIJO', 'CROQUETE COSTELA', 'DADINHO TAPIOCA', 'BURACO QUENTE', 'TORRESMO'];
 
 function extrairNomeUnificado(rawName) {
   let name = rawName.toUpperCase().trim();
@@ -358,7 +365,14 @@ function isIgnorado(name) {
   return IGNORADOS.has(n); 
 }
 
-let MEDIDAS_DB = {};
+let MEDIDAS_DB = {};   // fator de conversão por NOME DE ORIGEM (venda/romaneio) -> unidade de produção
+let PRODUTO_DB = {};    // unidade de produção (kg/un/L/porcao) por INSUMO CONSOLIDADO
+
+const UNIDADES_PRODUCAO = { un: 'unidades', kg: 'kg', L: 'litros', porcao: 'porções' };
+const UNIDADES_ABREV = { un: 'un', kg: 'kg', L: 'L', porcao: 'porção' };
+function unidadeOptionsHTML(current) {
+  return Object.keys(UNIDADES_PRODUCAO).map(u => `<option value="${u}" ${current===u?'selected':''}>${UNIDADES_PRODUCAO[u]}</option>`).join('');
+}
 
 function _norm(s) { return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z]/g,''); }
 function _isNoise(token) {
@@ -444,11 +458,14 @@ function save() {
   if (!S.weekDates[0]) return;
   localStorage.setItem('bw_v3_state', JSON.stringify({ weekDates: S.weekDates, margin: S.margin, dayData: S.dayData, externals: S.externals, allRawProductNames: Array.from(S.allRawProductNames) }));
   localStorage.setItem('bw_medidas_db', JSON.stringify(MEDIDAS_DB));
+  localStorage.setItem('bw_produto_db', JSON.stringify(PRODUTO_DB));
 }
 
 function loadSaved() {
   const savedMedidas = localStorage.getItem('bw_medidas_db');
   if (savedMedidas) { try { MEDIDAS_DB = JSON.parse(savedMedidas); } catch(e){} }
+  const savedProdutos = localStorage.getItem('bw_produto_db');
+  if (savedProdutos) { try { PRODUTO_DB = JSON.parse(savedProdutos); } catch(e){} }
   const raw = localStorage.getItem('bw_v3_state'); if (!raw) return;
   try {
     const p = JSON.parse(raw);
@@ -481,32 +498,60 @@ function toggleConfigPanel() {
 }
 
 function renderConfigGrid() {
-  const grid = document.getElementById('configGrid');
+  const gridProdutos = document.getElementById('configGridProdutos');
+  const gridOrigens = document.getElementById('configGrid');
+
   if (S.allRawProductNames.size === 0) {
-    grid.innerHTML = `<div style="grid-column: span 3; text-align:center; padding:15px; color:var(--muted); font-size:12px;">Nenhum item importado ainda. Faça upload de arquivos ou cole dados para listar os fatores.</div>`;
+    gridProdutos.innerHTML = `<div style="grid-column: span 3; text-align:center; padding:15px; color:var(--muted); font-size:12px;">Nenhum item importado ainda. Faça upload de arquivos ou cole dados para listar os insumos.</div>`;
+    gridOrigens.innerHTML = '';
     return;
   }
-  grid.innerHTML = Array.from(S.allRawProductNames).filter(key => !isIgnorado(key)).sort().map(key => {
-    const item = MEDIDAS_DB[key] || { uni: 'un', fator: 1.0 };
+
+  // 1) Insumos consolidados (nomes únicos após extrairNomeUnificado) -> unidade de produção
+  const consolidados = new Map();
+  Array.from(S.allRawProductNames).filter(k => !isIgnorado(k)).forEach(raw => {
+    const nomeUnificado = extrairNomeUnificado(raw);
+    const key = nomeUnificado.toUpperCase();
+    if (!consolidados.has(key)) consolidados.set(key, { nome: nomeUnificado, origens: [] });
+    consolidados.get(key).origens.push(raw);
+  });
+
+  gridProdutos.innerHTML = Array.from(consolidados.entries()).sort((a,b) => a[1].nome.localeCompare(b[1].nome)).map(([key, info]) => {
+    const cfg = PRODUTO_DB[key] || { uni: 'un' };
     return `
       <div class="config-item">
-        <div class="config-item-name" title="${key}">${cap(key)}</div>
+        <div class="config-item-name" title="${info.origens.join(', ')}">${cap(info.nome)}</div>
         <div class="config-inputs">
-          <select onchange="updateMedida('${key}', 'uni', this.value)">
-            <option value="un" ${item.uni==='un'?'selected':''}>un</option>
-            <option value="kg" ${item.uni==='kg'?'selected':''}>kg</option>
-            <option value="L" ${item.uni==='L'?'selected':''}>L</option>
-          </select>
+          <select onchange="updateProduto('${key}', this.value)">${unidadeOptionsHTML(cfg.uni)}</select>
+        </div>
+      </div>`;
+  }).join('');
+
+  // 2) Nomes de origem -> fator de conversão para a unidade de produção do insumo consolidado
+  gridOrigens.innerHTML = Array.from(S.allRawProductNames).filter(key => !isIgnorado(key)).sort().map(key => {
+    const item = MEDIDAS_DB[key] || { fator: 1.0 };
+    const nomeUnificado = extrairNomeUnificado(key);
+    const cfgProduto = PRODUTO_DB[nomeUnificado.toUpperCase()] || { uni: 'un' };
+    return `
+      <div class="config-item">
+        <div class="config-item-name" title="${key}">${cap(key)} <span style="color:var(--muted);font-weight:400">→ ${cap(nomeUnificado)}</span></div>
+        <div class="config-inputs">
           <input type="number" step="0.001" min="0.001" value="${item.fator}" onchange="updateMedida('${key}', 'fator', this.value)">
+          <span style="font-size:11px;color:var(--muted);align-self:center;white-space:nowrap">${UNIDADES_PRODUCAO[cfgProduto.uni]}</span>
         </div>
       </div>`;
   }).join('');
 }
 
 function updateMedida(key, field, value) {
-  if (!MEDIDAS_DB[key]) MEDIDAS_DB[key] = { uni: 'un', fator: 1.0 };
-  if (field === 'uni') MEDIDAS_DB[key].uni = value;
+  if (!MEDIDAS_DB[key]) MEDIDAS_DB[key] = { fator: 1.0 };
   if (field === 'fator') MEDIDAS_DB[key].fator = Math.max(0.001, parseFloat(value) || 1.0);
+  save(); renderDashboard();
+}
+
+function updateProduto(key, uni) {
+  if (!PRODUTO_DB[key]) PRODUTO_DB[key] = { uni: 'un' };
+  PRODUTO_DB[key].uni = uni;
   save(); renderDashboard();
 }
 
@@ -599,6 +644,14 @@ function getTier(avg) { if (avg >= 20) return 'Alta demanda'; if (avg >= 10) ret
 function pillClass(t) { return {'Alta demanda':'p-alta','Demanda média':'p-media'}[t]||'p-pont'; }
 function barColor(t) { return {'Alta demanda':'#2a78d6','Demanda média':'#1baf7a'}[t]||'#888780'; }
 function cap(s) { return (s||'').toLowerCase().replace(/\b\w/g,c=>c.toUpperCase()); }
+// kg/L admitem fração (ex: 3.25 kg); un/porção sempre em números inteiros (não dá pra produzir "meia unidade")
+function arredondaProducao(valor, uni) {
+  if (uni === 'kg' || uni === 'L') return Math.round(valor * 100) / 100;
+  return Math.ceil(valor);
+}
+function fmtQtd(valor, uni) {
+  return (uni === 'kg' || uni === 'L') ? valor.toFixed(2) : valor.toFixed(0);
+}
 
 function processData() {
   const { dayData, externals, margin } = S;
@@ -611,7 +664,7 @@ function processData() {
       const originalName = r.Produto.trim().toUpperCase(); if(isIgnorado(originalName)) return;
       const unifiedName = extrairNomeUnificado(originalName);
       const key = unifiedName.toUpperCase();
-      const configOriginal = MEDIDAS_DB[originalName] || { uni: 'un', fator: 1.0 };
+      const configOriginal = MEDIDAS_DB[originalName] || { fator: 1.0 };
       const quantidadeConvertida = parseFloat(r.Qtd || 0) * configOriginal.fator;
 
       if (!map[key]) map[key] = { name: unifiedName, byDay:[0,0,0,0,0,0], extByDay:[0,0,0,0,0,0], totalQtd:0 };
@@ -625,7 +678,7 @@ function processData() {
       const originalName = r.Produto.trim().toUpperCase(); if(isIgnorado(originalName)) return;
       const unifiedName = extrairNomeUnificado(originalName);
       const key = unifiedName.toUpperCase();
-      const configOriginal = MEDIDAS_DB[originalName] || { uni: 'un', fator: 1.0 };
+      const configOriginal = MEDIDAS_DB[originalName] || { fator: 1.0 };
       const quantidadeConvertida = parseFloat(r.Qtd || 0) * configOriginal.fator;
 
       if (!map[key]) map[key] = { name: unifiedName, byDay:[0,0,0,0,0,0], extByDay:[0,0,0,0,0,0], totalQtd:0 };
@@ -636,24 +689,25 @@ function processData() {
   
   S.products = Object.values(map).map(p => {
     const key = p.name.toUpperCase();
-    const configGeral = MEDIDAS_DB[key] || { uni: 'un', fator: 1.0 };
+    const configGeral = PRODUTO_DB[key] || { uni: 'un' };
     const dp = Math.max(loadedIdx.filter(i => p.byDay[i]>0).length, 1), avgReal = p.totalQtd / dp;
-    const metaDay = Math.ceil(avgReal * mult);
+    const uni = configGeral.uni;
+    const metaDay = arredondaProducao(avgReal * mult, uni);
     const allocDay = [0,0,0,0,0,0];
     
     for (let i=0; i<6; i++) {
       const somaBaseDia = p.byDay[i] + p.extByDay[i];
       let base = 0;
       if (S.dayData[i]) {
-        base = Math.ceil(somaBaseDia * mult);
+        base = arredondaProducao(somaBaseDia * mult, uni);
       } else {
-        base = (i===5) ? Math.ceil((avgReal + p.extByDay[i])*mult)*2 : Math.ceil((avgReal + p.extByDay[i])*mult);
+        base = (i===5) ? arredondaProducao((avgReal + p.extByDay[i])*mult, uni)*2 : arredondaProducao((avgReal + p.extByDay[i])*mult, uni);
       }
       allocDay[i] = base; 
       dayTotals[i] += base;
     }
     
-    return { ...p, avgReal, metaDay, satMeta:metaDay*2, projWeek: allocDay.reduce((a,b)=>a+b,0), allocDay, tier: getTier(avgReal), uni: configGeral.uni };
+    return { ...p, avgReal, metaDay, satMeta:metaDay*2, projWeek: allocDay.reduce((a,b)=>a+b,0), allocDay, tier: getTier(avgReal), uni };
   }).sort((a,b) => b.projWeek - a.projWeek);
   
   S.dayTotals = dayTotals.map(v => parseFloat(v.toFixed(2)));
@@ -667,16 +721,17 @@ function renderDashboard() {
   const { products, dayTotals } = S;
   
   document.getElementById('kpiRow').innerHTML = `
-    <div class="kpi blue"><div class="kpi-l">Volume Estimado</div><div class="kpi-v">${products.reduce((s,p)=>s+p.projWeek,0).toFixed(0)}</div><div class="kpi-s">Unidades combinadas</div></div>
-    <div class="kpi brew"><div class="kpi-l">Média Diária</div><div class="kpi-v">${products.reduce((s,p)=>s+p.metaDay,0).toFixed(0)}</div><div class="kpi-s">por dia ativo</div></div>
-    <div class="kpi green"><div class="kpi-l">Meta Sábado (×2)</div><div class="kpi-v">${dayTotals[5].toFixed(0)}</div><div class="kpi-s">Cobre Sáb + Dom</div></div>
-    <div class="kpi"><div class="kpi-l">Insumos Consolidados</div><div class="kpi-v">${products.length}</div><div class="kpi-s">excluindo bloqueados</div></div>`;
+    <div class="kpi blue"><div class="kpi-l">Insumos Consolidados</div><div class="kpi-v">${products.length}</div><div class="kpi-s">excluindo bloqueados</div></div>
+    <div class="kpi brew"><div class="kpi-l">Alta Demanda</div><div class="kpi-v">${products.filter(p=>p.tier==='Alta demanda').length}</div><div class="kpi-s">insumos neste perfil</div></div>
+    <div class="kpi green"><div class="kpi-l">Demanda Média</div><div class="kpi-v">${products.filter(p=>p.tier==='Demanda média').length}</div><div class="kpi-s">insumos neste perfil</div></div>
+    <div class="kpi"><div class="kpi-l">Pontuais</div><div class="kpi-v">${products.filter(p=>p.tier==='Pontual').length}</div><div class="kpi-s">insumos neste perfil</div></div>`;
 
-  document.getElementById('disclaBox').innerHTML = `<strong>Aviso de Conversão Inteligente:</strong> Os fatores definidos acima foram aplicados individualmente aos itens de entrada. O cronograma abaixo reflete a produção consolidada unificada.`;
+  document.getElementById('disclaBox').innerHTML = `<strong>Aviso de Conversão:</strong> Cada insumo é produzido na unidade configurada (kg, un, L ou porção). Os fatores de conversão aplicados aos nomes de origem convertem tudo para a unidade de produção antes de somar — por isso os valores abaixo já vêm prontos para o time pesar/contar, e não são somados entre insumos de unidades diferentes.`;
 
   document.getElementById('bkRow').innerHTML = [0,1,2,3,4,5,6].map(i => {
     if (i===6) return `<div class="bk dom"><div class="bk-day">Dom</div><div class="bk-val">😴</div></div>`;
-    return `<div class="bk ${i===5?'sat':''}"><div class="bk-day">${i===5?'Sáb+Dom':DSHORT[i]}</div><div class="bk-val">${(dayTotals[i]||0).toFixed(0)}</div></div>`;
+    const nInsumos = products.filter(p => p.allocDay[i] > 0).length;
+    return `<div class="bk ${i===5?'sat':''}"><div class="bk-day">${i===5?'Sáb+Dom':DSHORT[i]}</div><div class="bk-val">${nInsumos}</div><div class="bk-sub">insumos</div></div>`;
   }).join('');
 
   renderViewTabs(); renderTable(); renderChart();
@@ -692,11 +747,11 @@ function renderTable() {
   const { products, view } = S; const thead = document.getElementById('thead'), tbody = document.getElementById('tbody');
   if (view === 'geral') {
     thead.innerHTML = `<tr><th>Insumo Principal (Unificado)</th><th>U.M.</th><th>Perfil</th><th class="r">Total Vendas (Eq)</th><th class="r">Meta Diária</th><th class="r col-proj">Proj. Semana</th><th class="r col-sat">Sábado (×2)</th></tr>`;
-    tbody.innerHTML = products.map(p => `<tr><td style="font-weight:600">${cap(p.name)}</td><td><strong style="color:var(--brew)">${p.uni}</strong></td><td><span class="pill ${pillClass(p.tier)}">${p.tier}</span></td><td class="r">${p.totalQtd.toFixed(0)}</td><td class="r">${p.metaDay}</td><td class="r" style="font-weight:bold">${p.projWeek.toFixed(0)}</td><td class="r">${p.satMeta.toFixed(0)}</td></tr>`).join('');
+    tbody.innerHTML = products.map(p => `<tr><td style="font-weight:600">${cap(p.name)}</td><td><strong style="color:var(--brew)">${UNIDADES_ABREV[p.uni]}</strong></td><td><span class="pill ${pillClass(p.tier)}">${p.tier}</span></td><td class="r">${fmtQtd(p.totalQtd,p.uni)}</td><td class="r">${fmtQtd(p.metaDay,p.uni)}</td><td class="r" style="font-weight:bold">${fmtQtd(p.projWeek,p.uni)}</td><td class="r">${fmtQtd(p.satMeta,p.uni)}</td></tr>`).join('');
   } else {
     const di = parseInt(view);
     thead.innerHTML = `<tr><th>Insumo Principal (Unificado)</th><th>U.M.</th><th>Perfil</th><th class="r">Base Dia (Eq)</th><th class="r col-ext">Ext (Eq)</th><th class="r col-proj">👉 PRODUÇÃO HOJE</th></tr>`;
-    tbody.innerHTML = products.filter(p => p.allocDay[di] > 0).map(p => `<tr><td style="font-weight:700">${cap(p.name)}</td><td><strong style="color:var(--brew)">${p.uni}</strong></td><td><span class="pill ${pillClass(p.tier)}">${p.tier}</span></td><td class="r">${S.dayData[di]?p.byDay[di].toFixed(0):'—'}</td><td class="r">${p.extByDay[di]?p.extByDay[di].toFixed(0):'—'}</td><td class="r" style="background:var(--foam); font-weight:bold; color:var(--alta-c)">${p.allocDay[di]} ${p.uni}</td></tr>`).join('');
+    tbody.innerHTML = products.filter(p => p.allocDay[di] > 0).map(p => `<tr><td style="font-weight:700">${cap(p.name)}</td><td><strong style="color:var(--brew)">${UNIDADES_ABREV[p.uni]}</strong></td><td><span class="pill ${pillClass(p.tier)}">${p.tier}</span></td><td class="r">${S.dayData[di]?fmtQtd(p.byDay[di],p.uni):'—'}</td><td class="r">${p.extByDay[di]?fmtQtd(p.extByDay[di],p.uni):'—'}</td><td class="r" style="background:var(--foam); font-weight:bold; color:var(--alta-c)">${fmtQtd(p.allocDay[di],p.uni)} ${UNIDADES_ABREV[p.uni]}</td></tr>`).join('');
   }
 }
 
@@ -705,16 +760,26 @@ function renderChart() {
   const ctx = document.getElementById('chartTop');
   if (ctx && top15.length) {
     CHARTS.top = new Chart(ctx, {
-      type: 'bar', data: { labels: top15.map(p => cap(p.name).slice(0,12)), datasets: [{ data:top15.map(p=>p.projWeek), backgroundColor:top15.map(p=>barColor(p.tier)) }] },
+      type: 'bar', data: { labels: top15.map(p => cap(p.name).slice(0,12)+' ('+UNIDADES_ABREV[p.uni]+')'), datasets: [{ data:top15.map(p=>p.projWeek), backgroundColor:top15.map(p=>barColor(p.tier)) }] },
       options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}} }
     });
   }
 }
 
-function exportCSV() { _dlCSV(S.products.map(p=>[cap(p.name),p.uni,p.metaDay,p.projWeek]), 'producao.csv'); }
-function exportRomaneio() { _dlCSV(S.products.map(p=>[cap(p.name),p.uni,p.metaDay,p.satMeta]), 'romaneio.csv'); }
-function _dlCSV(rows,name) { const csv=rows.map(r=>r.map(c=>'"'+String(c)+'"').join(',')).join('\n'); const blob=new Blob(['\uFEFF'+csv],{type:'text/csv'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=name; a.click(); }
-function resetAll() { localStorage.removeItem('bw_v3_state'); localStorage.removeItem('bw_medidas_db'); location.reload(); }
+function exportCSV() { _dlCSV(['Insumo','Unidade','Meta Diária','Proj. Semana'], S.products.map(p=>[cap(p.name),UNIDADES_ABREV[p.uni],fmtQtd(p.metaDay,p.uni),fmtQtd(p.projWeek,p.uni)]), 'producao.csv'); }
+function exportRomaneio() { _dlCSV(['Insumo','Unidade','Meta Diária','Meta Sábado (x2)'], S.products.map(p=>[cap(p.name),UNIDADES_ABREV[p.uni],fmtQtd(p.metaDay,p.uni),fmtQtd(p.satMeta,p.uni)]), 'romaneio.csv'); }
+function _dlCSV(header,rows,name) { const csv=[header,...rows].map(r=>r.map(c=>'"'+String(c)+'"').join(',')).join('\n'); const blob=new Blob(['\uFEFF'+csv],{type:'text/csv'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=name; a.click(); }
+function resetAll() {
+  if (!confirm('Isso vai apagar TUDO: a semana atual, os romaneios importados E as unidades/fatores de conversão configurados. Essa ação não pode ser desfeita. Deseja continuar?')) return;
+  localStorage.removeItem('bw_v3_state'); localStorage.removeItem('bw_medidas_db'); localStorage.removeItem('bw_produto_db'); location.reload();
+}
+function limparSemana() {
+  if (!confirm('Isso vai apagar os dados da semana atual (vendas importadas e romaneios), mas MANTÉM as unidades e fatores de conversão configurados. Deseja continuar?')) return;
+  S.dayData = [null,null,null,null,null,null];
+  S.externals = [];
+  S.allRawProductNames = new Set();
+  save(); renderCards(); renderChips(); renderDashboard();
+}
 
 renderCards(); setThisWeek(); loadSaved();
 </script>
