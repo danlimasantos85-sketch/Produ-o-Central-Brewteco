@@ -339,19 +339,21 @@ const IGNORADOS = new Set([
   'arroz branco', 'batata portuguesa', 'feijao preto', 'schnitzel', 'anjo', 'mignon',
   'combo bolinhos 3 unidades', 'combo bolinhos 10 unidades', 'combo bolinhos 6 unidades', 
   'combo bolinhos 5 unidades', 'combo bolinhos 8 unidades', 'combo bolinhos 9 unidades', 
-  'combo bolinhos 4 unidades', 'galeto combinado'
+  'combo bolinhos 4 unidades', 'galeto combinado', 'geleia de pimenta'
 ].map(s => s.trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'')));
 
-const RADICAIS_CONHECIDOS = ['ANCHO', 'FRALDINHA', 'GALETO', 'PASTEL DE QUEIJO', 'PASTEL QUEIJO', 'CROQUETE COSTELA', 'DADINHO TAPIOCA', 'BURACO QUENTE', 'TORRESMO'];
+const RADICAIS_CONHECIDOS = ['ANCHO', 'FRALDINHA', 'GALETO', 'GURJAO', 'PASTEL DE QUEIJO', 'PASTEL QUEIJO', 'CROQUETE COSTELA', 'DADINHO TAPIOCA', 'BURACO QUENTE', 'TORRESMO'];
 
 function extrairNomeUnificado(rawName) {
   let name = rawName.toUpperCase().trim();
-  name = name.replace(/^(PREP\s+DE\s+|PREP\s+|PREPARACAO\s+DE\s+|PREPARACAO\s+|MENU\s+KIDS\s+)/g, '');
-  name = name.replace(/(COMBINADO|PORCAO|BUFFET|PRONTO|MARINADO|FATIAS|STEAK|MASSA\s+DE|RECHEIO)/g, '').trim();
+  name = name.replace(/^(PREP\s+DE\s+|PREP\s+|PREPARACAO\s+DE\s+|PREPARACAO\s+)/g, '');
+  name = name.replace(/(COMBINADO|PORCAO|BUFFET|PRONTO|MARINADO|FATIAS|STEAK|MASSA\s+DE|RECHEIO|LIGHT|ANIVERSARIO)/g, '').trim();
   name = name.replace(/\s+/g, ' ').trim();
   
+  const nameNorm = name.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
   for (const rad of RADICAIS_CONHECIDOS) {
-    if (name.includes(rad) || rad.includes(name)) {
+    const radNorm = rad.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    if (nameNorm.includes(radNorm) || radNorm.includes(nameNorm)) {
       return rad + " (CONSOLIDADO)";
     }
   }
