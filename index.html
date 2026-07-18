@@ -339,7 +339,7 @@ const IGNORADOS = new Set([
   'arroz branco', 'batata portuguesa', 'feijao preto', 'schnitzel', 'anjo', 'mignon',
   'combo bolinhos 3 unidades', 'combo bolinhos 10 unidades', 'combo bolinhos 6 unidades', 
   'combo bolinhos 5 unidades', 'combo bolinhos 8 unidades', 'combo bolinhos 9 unidades', 
-  'combo bolinhos 4 unidades', 'geleia de pimenta', 'Bv Pastel Camarao', 'Molho Aioli Paprica',
+  'combo bolinhos 4 unidades', 'geleia de pimenta', 'Molho Aioli Paprica',
 ].map(s => s.trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'')));
 
 const RADICAIS_CONHECIDOS = ['ANCHO', 'FRALDINHA', 'GALETO', 'GURJAO', 'PASTEL DE QUEIJO', 'PASTEL QUEIJO', 'CROQUETE COSTELA', 'DADINHO TAPIOCA', 'BURACO QUENTE', 'TORRESMO'];
@@ -347,8 +347,8 @@ const RADICAIS_CONHECIDOS = ['ANCHO', 'FRALDINHA', 'GALETO', 'GURJAO', 'PASTEL D
 function extrairNomeUnificado(rawName) {
   let name = rawName.toUpperCase().trim();
   name = name.normalize('NFD').replace(/[\u0300-\u036f]/g,''); // remove acentos logo no início p/ comparação robusta
-  name = name.replace(/^(PREP\s+DE\s+|PREP\s+|PREPARACAO\s+DE\s+|PREPARACAO\s+)/g, '');
-  name = name.replace(/(COMBINADO|PORCAO|BUFFET|PRONTO|MARINADO|FATIAS|STEAK|MASSA\s+DE|RECHEIO|LIGHT|ANIVERSARIO)/g, '').trim();
+  name = name.replace(/^(PREP\s+DE\s+|PREP\s+|PREPARACAO\s+DE\s+|PREPARACAO\s+|BV\s+)/g, '');
+  name = name.replace(/(COMBINADO|PORCAO|BUFFET|PRONTO|MARINADO|FATIAS|STEAK|MASSA\s+DE|RECHEIO|LIGHT|ANIVERSARIO|UNIDADES?)/g, '').trim();
   name = name.replace(/\b(DE|DO|DA|DOS|DAS)\b/g, ' '); // conectivos que não mudam a identidade do produto
   name = name.replace(/\b\d+[.,]?\d*\s*(G|KG|ML|L|UN|UND)\b/g, ' '); // sufixos de peso/tamanho (ex: 250G)
   name = name.replace(/\s+/g, ' ').trim();
